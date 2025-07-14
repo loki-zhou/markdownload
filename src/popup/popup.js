@@ -48,7 +48,7 @@ const toggleClipSelection = options => {
     options.clipSelection = !options.clipSelection;
     document.querySelector("#selected").classList.toggle("checked");
     document.querySelector("#document").classList.toggle("checked");
-    browser.storage.sync.set(options).then(() => clipSite()).catch((error) => {
+    chrome.storage.sync.set(options).then(() => clipSite()).catch((error) => {
         console.error(error);
     });
 }
@@ -56,12 +56,12 @@ const toggleClipSelection = options => {
 const toggleIncludeTemplate = options => {
     options.includeTemplate = !options.includeTemplate;
     document.querySelector("#includeTemplate").classList.toggle("checked");
-    browser.storage.sync.set(options).then(() => {
-        browser.contextMenus.update("toggle-includeTemplate", {
+    chrome.storage.sync.set(options).then(() => {
+        chrome.contextMenus.update("toggle-includeTemplate", {
             checked: options.includeTemplate
         });
         try {
-            browser.contextMenus.update("tabtoggle-includeTemplate", {
+            chrome.contextMenus.update("tabtoggle-includeTemplate", {
                 checked: options.includeTemplate
             });
         } catch { }
@@ -74,12 +74,12 @@ const toggleIncludeTemplate = options => {
 const toggleDownloadImages = options => {
     options.downloadImages = !options.downloadImages;
     document.querySelector("#downloadImages").classList.toggle("checked");
-    browser.storage.sync.set(options).then(() => {
-        browser.contextMenus.update("toggle-downloadImages", {
+    chrome.storage.sync.set(options).then(() => {
+        chrome.contextMenus.update("toggle-downloadImages", {
             checked: options.downloadImages
         });
         try {
-            browser.contextMenus.update("tabtoggle-downloadImages", {
+            chrome.contextMenus.update("tabtoggle-downloadImages", {
                 checked: options.downloadImages
             });
         } catch { }
@@ -96,25 +96,35 @@ const showOrHideClipOption = selection => {
     }
 }
 
+function getSelectionAndDom() {
+    return {
+        "dom": document.documentElement.outerHTML,
+        "selection": window.getSelection().toString()
+    };
+}
+
 const clipSite = id => {
-    return browser.tabs.executeScript(id, { code: "getSelectionAndDom()" })
+    return chrome.scripting.executeScript({
+        target: { tabId: id },
+        func: getSelectionAndDom
+    })
         .then((result) => {
-            if (result && result[0]) {
-                showOrHideClipOption(result[0].selection);
+            if (result && result[0] && result[0].result) {
+                showOrHideClipOption(result[0].result.selection);
                 let message = {
                     type: "clip",
-                    dom: result[0].dom,
-                    selection: result[0].selection
+                    dom: result[0].result.dom,
+                    selection: result[0].result.selection
                 }
-                return browser.storage.sync.get(defaultOptions).then(options => {
-                    browser.runtime.sendMessage({
+                return chrome.storage.sync.get(defaultOptions).then(options => {
+                    chrome.runtime.sendMessage({
                         ...message,
                         ...options
                     });
                 }).catch(err => {
                     console.error(err);
                     showError(err)
-                    return browser.runtime.sendMessage({
+                    return chrome.runtime.sendMessage({
                         ...message,
                         ...defaultOptions
                     });
@@ -130,7 +140,7 @@ const clipSite = id => {
 }
 
 // inject the necessary scripts
-browser.storage.sync.get(defaultOptions).then(options => {
+chrome.storage.sync.get(defaultOptions).then(options => {
     checkInitialSettings(options);
     
     document.getElementById("selected").addEventListener("click", (e) => {
@@ -150,21 +160,18 @@ browser.storage.sync.get(defaultOptions).then(options => {
         toggleDownloadImages(options);
     });
     
-    return browser.tabs.query({
+    return chrome.tabs.query({
         currentWindow: true,
         active: true
     });
 }).then((tabs) => {
     var id = tabs[0].id;
     var url = tabs[0].url;
-    browser.tabs.executeScript(id, {
-        file: "/browser-polyfill.min.js"
+    chrome.scripting.executeScript({
+        target: { tabId: id },
+        files: ["/contentScript/contentScript.js"]
     })
-    .then(() => {
-        return browser.tabs.executeScript(id, {
-            file: "/contentScript/contentScript.js"
-        });
-    }).then( () => {
+    .then( () => {
         console.info("Successfully injected MarkDownload content script");
         return clipSite(id);
     }).catch( (error) => {
@@ -174,13 +181,13 @@ browser.storage.sync.get(defaultOptions).then(options => {
 });
 
 // listen for notifications from the background page
-browser.runtime.onMessage.addListener(notify);
+chrome.runtime.onMessage.addListener(notify);
 
 //function to send the download message to the background page
 function sendDownloadMessage(text) {
     if (text != null) {
 
-        return browser.tabs.query({
+        return chrome.tabs.query({
             currentWindow: true,
             active: true
         }).then(tabs => {
@@ -192,7 +199,7 @@ function sendDownloadMessage(text) {
                 imageList: imageList,
                 mdClipsFolder: mdClipsFolder
             };
-            return browser.runtime.sendMessage(message);
+            return chrome.runtime.sendMessage(message);
         });
     }
 }

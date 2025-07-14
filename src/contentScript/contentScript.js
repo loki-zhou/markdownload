@@ -1,6 +1,6 @@
 function notifyExtension() {
     // send a message that the content should be clipped
-    browser.runtime.sendMessage({ type: "clip", dom: content});
+    chrome.runtime.sendMessage({ type: "clip", dom: content});
 }
 
 function getHTMLOfDocument() {
@@ -165,6 +165,6 @@ function downloadImage(filename, url) {
 
 (function loadPageContextScript(){
     var s = document.createElement('script');
-    s.src = browser.runtime.getURL('contentScript/pageContext.js');
+    s.src = chrome.runtime.getURL('contentScript/pageContext.js');
     (document.head||document.documentElement).appendChild(s);
 })()
