@@ -15,6 +15,18 @@ chrome.runtime.onMessage.addListener(async (message) => {
       chrome.runtime.sendMessage({ type: 'turndown-result', data: result });
       break;
     }
+    case 'pre-download-images': {
+      const { imageList, markdown, options } = message.data;
+      const result = await preDownloadImages(imageList, markdown, options);
+      chrome.runtime.sendMessage({ type: 'pre-download-images-result', data: result });
+      break;
+    }
+    case 'create-object-url': {
+      const blob = message.data;
+      const url = URL.createObjectURL(blob);
+      chrome.runtime.sendMessage({ type: 'create-object-url-result', data: url });
+      break;
+    }
   }
 });
 
@@ -416,4 +428,40 @@ function generateValidFileName(title, disallowedChars = null) {
   }
   
   return name;
+}
+
+async function preDownloadImages(imageList, markdown, options) {
+  let newImageList = {};
+  await Promise.all(Object.entries(imageList).map(async ([src, filename]) => {
+    try {
+      const response = await fetch(src);
+      const blob = await response.blob();
+
+      if (options.imageStyle == 'base64') {
+        const reader = new FileReader();
+        await new Promise((resolve, reject) => {
+          reader.onloadend = resolve;
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        markdown = markdown.replaceAll(src, reader.result);
+      } else {
+        let newFilename = filename;
+        if (newFilename.endsWith('.idunno')) {
+          newFilename = filename.replace('.idunno', '.' + mimedb[blob.type]);
+          if (!options.imageStyle.startsWith("obsidian")) {
+            markdown = markdown.replaceAll(filename.split('/').map(s => encodeURI(s)).join('/'), newFilename.split('/').map(s => encodeURI(s)).join('/'))
+          } else {
+            markdown = markdown.replaceAll(filename, newFilename)
+          }
+        }
+        const blobUrl = URL.createObjectURL(blob);
+        newImageList[blobUrl] = newFilename;
+      }
+    } catch (error) {
+      console.error('A network error occurred attempting to download ' + src, error);
+    }
+  }));
+
+  return { imageList: newImageList, markdown: markdown };
 }

@@ -120,7 +120,7 @@ async function convertArticleToMarkdown(article, downloadImages = null) {
   options.imagePrefix = textReplace(options.imagePrefix, article, options.disallowedChars)
     .split('/').map(s=>generateValidFileName(s, options.disallowedChars)).join('/');
 
-  let result = turndown(article.content, options, article);
+  let result = await turndown(article.content, options, article);
   if (options.downloadImages && options.downloadMode == 'downloadsApi') {
     // pre-download the images
     result = await preDownloadImages(result.imageList, result.markdown);
@@ -153,39 +153,30 @@ function generateValidFileName(title, disallowedChars = null) {
 
 async function preDownloadImages(imageList, markdown) {
   const options = await getOptions();
-  let newImageList = {};
-  await Promise.all(Object.entries(imageList).map(async ([src, filename]) => {
-    try {
-      const response = await fetch(src);
-      const blob = await response.blob();
+  
+  await chrome.offscreen.createDocument({
+    url: chrome.runtime.getURL('offscreen/offscreen.html'),
+    reasons: ['BLOBS'],
+    justification: 'Pre-download images and create Object URLs.',
+  });
 
-      if (options.imageStyle == 'base64') {
-        const reader = new FileReader();
-        await new Promise((resolve, reject) => {
-          reader.onloadend = resolve;
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-        markdown = markdown.replaceAll(src, reader.result);
-      } else {
-        let newFilename = filename;
-        if (newFilename.endsWith('.idunno')) {
-          newFilename = filename.replace('.idunno', '.' + mimedb[blob.type]);
-          if (!options.imageStyle.startsWith("obsidian")) {
-            markdown = markdown.replaceAll(filename.split('/').map(s => encodeURI(s)).join('/'), newFilename.split('/').map(s => encodeURI(s)).join('/'))
-          } else {
-            markdown = markdown.replaceAll(filename, newFilename)
-          }
-        }
-        const blobUrl = URL.createObjectURL(blob);
-        newImageList[blobUrl] = newFilename;
+  const result = await new Promise((resolve) => {
+    const listener = (message) => {
+      if (message.type === 'pre-download-images-result') {
+        chrome.runtime.onMessage.removeListener(listener);
+        chrome.offscreen.closeDocument();
+        resolve(message.data);
       }
-    } catch (error) {
-      console.error('A network error occurred attempting to download ' + src, error);
-    }
-  }));
+    };
+    chrome.runtime.onMessage.addListener(listener);
+    chrome.runtime.sendMessage({
+      type: 'pre-download-images',
+      target: 'offscreen',
+      data: { imageList, markdown, options }
+    });
+  });
 
-  return { imageList: newImageList, markdown: markdown };
+  return result;
 }
 
 // function to actually download the markdown file
