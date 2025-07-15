@@ -17,9 +17,45 @@ chrome.runtime.onMessage.addListener(notify);
 // create context menus
 createMenus()
 
+let creating; // A global promise to avoid concurrency issues
+async function setupOffscreenDocument(path, parameters) {
+  // Check all windows controlled by the service worker to see if one 
+  // of them is the offscreen document with the given path
+  const offscreenUrl = chrome.runtime.getURL(path);
+  const existingContexts = await chrome.runtime.getContexts({
+    contextTypes: ['OFFSCREEN_DOCUMENT'],
+    documentUrls: [offscreenUrl]
+  });
+
+  if (existingContexts.length > 0) {
+    return;
+  }
+
+  // create offscreen document
+  if (creating) {
+    await creating;
+  } else {
+    creating = chrome.offscreen.createDocument(parameters);
+    await creating;
+    creating = null;
+  }
+}
+
+async function closeOffscreenDocument() {
+  const offscreenUrl = chrome.runtime.getURL('offscreen/offscreen.html');
+  const existingContexts = await chrome.runtime.getContexts({
+    contextTypes: ['OFFSCREEN_DOCUMENT'],
+    documentUrls: [offscreenUrl]
+  });
+
+  if (existingContexts.length > 0) {
+    await chrome.offscreen.closeDocument();
+  }
+}
+
 // function to convert the article content to markdown using Turndown
 async function turndown(content, options, article) {
-  await chrome.offscreen.createDocument({
+  await setupOffscreenDocument('offscreen/offscreen.html', {
     url: chrome.runtime.getURL('offscreen/offscreen.html'),
     reasons: ['DOM_PARSER'],
     justification: 'Convert HTML to Markdown',
@@ -29,7 +65,7 @@ async function turndown(content, options, article) {
     const listener = (message) => {
       if (message.type === 'turndown-result') {
         chrome.runtime.onMessage.removeListener(listener);
-        chrome.offscreen.closeDocument();
+        // Do not close the offscreen document here, let it be reused or timeout.
         resolve(message.data);
       }
     };
@@ -154,7 +190,7 @@ function generateValidFileName(title, disallowedChars = null) {
 async function preDownloadImages(imageList, markdown) {
   const options = await getOptions();
   
-  await chrome.offscreen.createDocument({
+  await setupOffscreenDocument('offscreen/offscreen.html', {
     url: chrome.runtime.getURL('offscreen/offscreen.html'),
     reasons: ['BLOBS'],
     justification: 'Pre-download images and create Object URLs.',
@@ -413,7 +449,7 @@ async function ensureScripts(tabId) {
 
 // get Readability article info from the dom passed in
 async function getArticleFromDom(domString) {
-  await chrome.offscreen.createDocument({
+  await setupOffscreenDocument('offscreen/offscreen.html', {
     url: chrome.runtime.getURL('offscreen/offscreen.html'),
     reasons: ['DOM_PARSER'],
     justification: 'Parse DOM from string',
@@ -423,7 +459,7 @@ async function getArticleFromDom(domString) {
     const listener = (message) => {
       if (message.type === 'parse-dom-result') {
         chrome.runtime.onMessage.removeListener(listener);
-        chrome.offscreen.closeDocument();
+        // Do not close the offscreen document here
         resolve(message.data);
       }
     };
