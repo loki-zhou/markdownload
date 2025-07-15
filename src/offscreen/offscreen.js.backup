@@ -169,66 +169,32 @@ async function getArticleFromDom(domString, originalUrl = null) {
   // IMPORTANT: dom.baseURI in offscreen context might be chrome-extension:// protocol
   // so we need to be careful about using it
   let effectiveBaseURI;
+  console.log('DEBUG: originalUrl =', originalUrl);
+  console.log('DEBUG: dom.baseURI =', dom.baseURI);
   
-  // First priority: Use originalUrl if it's a valid URL string
-  if (originalUrl && typeof originalUrl === 'string' && originalUrl.trim() !== '') {
-    try {
-      // Test if originalUrl is a valid URL
-      const testUrl = new URL(originalUrl);
-      effectiveBaseURI = originalUrl;
-    } catch (error) {
-      // Handle invalid URL
-    }
-  }
-  
-  // Second priority: Use dom.baseURI if it's not a chrome-extension URL
-  if (!effectiveBaseURI && dom.baseURI && !dom.baseURI.startsWith('chrome-extension://')) {
-    try {
-      new URL(dom.baseURI);
-      effectiveBaseURI = dom.baseURI;
-    } catch (error) {
-      // Handle invalid URL
-    }
-  }
-  
-  // Third priority: Check for base element in the DOM
-  if (!effectiveBaseURI) {
+  if (originalUrl) {
+    effectiveBaseURI = originalUrl;
+    console.log('DEBUG: Using originalUrl as baseURI');
+  } else if (dom.baseURI && !dom.baseURI.startsWith('chrome-extension://')) {
+    effectiveBaseURI = dom.baseURI;
+    console.log('DEBUG: Using dom.baseURI as baseURI');
+  } else {
+    // Fallback: try to extract base URL from the base element if it exists
     const baseElement = dom.head?.querySelector('base');
+    console.log('DEBUG: baseElement =', baseElement);
+    console.log('DEBUG: baseElement.href =', baseElement?.href);
     
     if (baseElement && baseElement.href && !baseElement.href.startsWith('chrome-extension://')) {
-      try {
-        new URL(baseElement.href);
-        effectiveBaseURI = baseElement.href;
-      } catch (error) {
-        // Handle invalid URL
-      }
-    }
-  }
-  
-  // Fourth priority: Try to extract URL from the DOM content (meta tags, etc.)
-  if (!effectiveBaseURI && dom.head) {
-    const canonicalLink = dom.head.querySelector('link[rel="canonical"]');
-    if (canonicalLink && canonicalLink.href) {
-      try {
-        const canonicalUrl = new URL(canonicalLink.href);
-        effectiveBaseURI = canonicalUrl.origin + canonicalUrl.pathname;
-      } catch (error) {
-        // Handle invalid URL
-      }
-    }
-  }
-  
-  // Last resort: Use a reasonable fallback based on common patterns
-  if (!effectiveBaseURI) {
-    // Try to determine if this looks like a GitHub page or other common site
-    const title = dom.title || '';
-    if (title.includes('GitHub') || dom.querySelector('meta[property="og:site_name"][content*="GitHub"]')) {
-      effectiveBaseURI = 'https://github.com/';
+      effectiveBaseURI = baseElement.href;
+      console.log('DEBUG: Using baseElement.href as baseURI');
     } else {
+      // Last resort: use a generic base URL (this shouldn't happen in normal cases)
+      console.warn('No valid base URI found, using fallback');
       effectiveBaseURI = 'https://example.com/';
     }
   }
   
+  console.log('DEBUG: Final effectiveBaseURI =', effectiveBaseURI);
   article.baseURI = effectiveBaseURI;
   
   // also grab the page title
@@ -246,6 +212,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
     article.protocol = url.protocol;
     article.search = url.search;
   } catch (error) {
+    console.warn('Failed to parse effective base URI:', effectiveBaseURI, error);
     // Fallback to dom.baseURI if originalUrl parsing fails
     try {
       const fallbackUrl = new URL(dom.baseURI);
@@ -258,7 +225,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
       article.protocol = fallbackUrl.protocol;
       article.search = fallbackUrl.search;
     } catch (fallbackError) {
-      // Handle both errors
+      console.error('Failed to parse both original and DOM base URI:', error, fallbackError);
     }
   }
   
@@ -311,6 +278,7 @@ function turndown(content, options, article) {
         let src = node.getAttribute('src')
         // set the new src
         const validatedSrc = validateUri(src, article.baseURI);
+        console.debug('Image src validation:', src, '->', validatedSrc, 'baseURI:', article.baseURI);
         node.setAttribute('src', validatedSrc);
         
         // if we're downloading images, there's more to do.
@@ -391,6 +359,11 @@ function turndown(content, options, article) {
         // The article.baseURI should now contain the originalUrl if available
         const validatedHref = validateUri(href, article.baseURI);
         
+        // Add debug logging for anchor link processing
+        if (isAnchorLink(href) || isRelativeToCurrentPage(href)) {
+          console.debug('Processing anchor/relative link:', href, '->', validatedHref);
+        }
+        
         // set the new href
         node.setAttribute('href', validatedHref);
         
@@ -418,7 +391,7 @@ function turndown(content, options, article) {
         return `$${tex}$`;
       }
       else
-        return `$\n${tex}\n$`;
+        return `$$\n${tex}\n$$`;
     }
   });
 
@@ -514,7 +487,7 @@ function safeUrlParse(urlString, baseUrl = null) {
       result = new URL(urlString);
     }
   } catch (error) {
-    // Handle error
+    console.warn('Failed to parse URL:', urlString, 'with base:', baseUrl, error);
   }
   
   // Cache the result (including null for failed parses)
@@ -599,57 +572,15 @@ function validateAnchorLink(href, baseURI) {
 }
 
 function validateUri(href, baseURI) {
-  // CRITICAL FIX: If baseURI starts with chrome-extension://, try to extract a proper base
-  if (baseURI && baseURI.startsWith('chrome-extension://')) {
-    // Try to extract domain from article properties or use a fallback
-    // This is more flexible than hardcoding GitHub
-    if (article && article.origin) {
-      baseURI = article.origin + '/';
-    } else if (article && article.hostname) {
-      baseURI = 'https://' + article.hostname + '/';
-    } else {
-      // Last resort fallback - try to guess from the href pattern
-      if (href && href.includes('/github.com/')) {
-        baseURI = 'https://github.com/';
-      } else {
-        baseURI = 'https://example.com/'; // Generic fallback
-      }
-    }
-  }
+  console.log('DEBUG validateUri: href =', href, 'baseURI =', baseURI);
   
-  // Special handling for chrome-extension:// links
-  if (href && href.startsWith('chrome-extension://')) {
-    // Generic pattern for GitHub-like paths
-    const githubPathMatch = href.match(/\/([^\/]+)\/([^\/]+)\/(raw|blob)\/([^\/]+)\/(.+)/);
-    if (githubPathMatch) {
-      const user = githubPathMatch[1];
-      const repo = githubPathMatch[2];
-      const type = githubPathMatch[3]; // raw or blob
-      const branch = githubPathMatch[4]; // master, main, etc.
-      const path = githubPathMatch[5]; // file path
-      
-      // Convert to GitHub URL
-      return `https://github.com/${user}/${repo}/${type}/${branch}/${path}`;
-    }
-    
-    // If not a GitHub pattern, try to extract the path part after the extension ID
-    const generalPathMatch = href.match(/chrome-extension:\/\/[^\/]+(.+)/);
-    if (generalPathMatch) {
-      const path = generalPathMatch[1];
-      // Try to construct a URL using the baseURI
-      if (baseURI) {
-        try {
-          // Remove leading slash if baseURI ends with slash
-          if (path.startsWith('/') && baseURI.endsWith('/')) {
-            return baseURI + path.substring(1);
-          }
-          return baseURI + path;
-        } catch (e) {
-          // If construction fails, return the original href
-          return href;
-        }
-      }
-    }
+  // CRITICAL FIX: If baseURI starts with chrome-extension://, force use a proper base
+  if (baseURI && baseURI.startsWith('chrome-extension://')) {
+    console.warn('CRITICAL: Detected chrome-extension baseURI, this should not happen!');
+    console.warn('Original baseURI:', baseURI);
+    // Try to extract the real URL from somewhere else or use a fallback
+    baseURI = 'https://github.com/'; // Fallback for GitHub pages
+    console.warn('Using fallback baseURI:', baseURI);
   }
   
   // Special handling for anchor links
@@ -676,8 +607,10 @@ function validateUri(href, baseURI) {
           }
         }
         // If path resolution fails, return as-is
+        console.warn('Failed to resolve relative anchor link:', href, 'with base:', baseURI);
         return href;
       } catch (error) {
+        console.warn('Error processing relative anchor link:', href, error);
         return href;
       }
     } else if (hashIndex === 0) {
@@ -695,6 +628,7 @@ function validateUri(href, baseURI) {
     // if it's not a valid url, that likely means we have to prepend the base uri
     const baseUrl = safeUrlParse(baseURI);
     if (!baseUrl) {
+      console.error('Invalid base URI provided:', baseURI);
       return href; // Return original href if base URI is invalid
     }
 
@@ -708,10 +642,35 @@ function validateUri(href, baseURI) {
         href = baseUrl.href + (baseUrl.href.endsWith('/') ? '' : '/') + href;
       }
     } catch (error) {
+      console.warn('Error constructing URL:', error);
       return href; // Return original href on error
     }
   }
   return href;
+}
+
+// Enhanced validateUri function with comprehensive fallback mechanisms
+function validateUriWithFallback(href, baseURI, originalHref = null) {
+  try {
+    // First attempt with the enhanced validateUri
+    const result = validateUri(href, baseURI);
+    
+    // Validate the result is a reasonable URL or anchor link
+    if (result && (result.startsWith('#') || safeUrlParse(result))) {
+      return result;
+    }
+    
+    console.warn('validateUri returned invalid result:', result, 'for href:', href);
+    
+    // Fallback to original href if result is invalid
+    return originalHref || href;
+    
+  } catch (error) {
+    console.error('Critical error in validateUri:', error, 'href:', href, 'baseURI:', baseURI);
+    
+    // Final fallback - return the original href
+    return originalHref || href;
+  }
 }
 
 function getImageFilename(src, options, prependFilePath = true) {
@@ -769,46 +728,7 @@ async function preDownloadImages(imageList, markdown, options) {
   let newImageList = {};
   await Promise.all(Object.entries(imageList).map(async ([src, filename]) => {
     try {
-      // Convert chrome-extension URLs to proper URLs before fetching
-      let fetchUrl = src;
-      if (src.startsWith('chrome-extension://')) {
-        // Use the same logic as validateUri to convert chrome-extension URLs
-        // Generic pattern for GitHub-like paths
-        const githubPathMatch = src.match(/\/([^\/]+)\/([^\/]+)\/(raw|blob)\/([^\/]+)\/(.+)/);
-        if (githubPathMatch) {
-          const user = githubPathMatch[1];
-          const repo = githubPathMatch[2];
-          const type = githubPathMatch[3]; // raw or blob
-          const branch = githubPathMatch[4]; // master, main, etc.
-          const path = githubPathMatch[5]; // file path
-          
-          // Convert to GitHub URL
-          fetchUrl = `https://github.com/${user}/${repo}/${type}/${branch}/${path}`;
-          console.log('Converting image URL for fetch:', src, '->', fetchUrl);
-        } else {
-          // Try to use the baseURI from the article if available
-          if (article && article.baseURI) {
-            const generalPathMatch = src.match(/chrome-extension:\/\/[^\/]+(.+)/);
-            if (generalPathMatch) {
-              const path = generalPathMatch[1];
-              // Try to construct a URL using the baseURI
-              try {
-                // Remove leading slash if baseURI ends with slash
-                if (path.startsWith('/') && article.baseURI.endsWith('/')) {
-                  fetchUrl = article.baseURI + path.substring(1);
-                } else {
-                  fetchUrl = article.baseURI + path;
-                }
-                console.log('Converting image URL using baseURI:', src, '->', fetchUrl);
-              } catch (e) {
-                console.warn('Failed to convert image URL:', src, e);
-              }
-            }
-          }
-        }
-      }
-      
-      const response = await fetch(fetchUrl);
+      const response = await fetch(src);
       const blob = await response.blob();
 
       if (options.imageStyle == 'base64') {
@@ -838,4 +758,53 @@ async function preDownloadImages(imageList, markdown, options) {
   }));
 
   return { imageList: newImageList, markdown: markdown };
+}
+
+// Test functions for anchor link processing
+function runAnchorLinkTests() {
+  console.log('Running anchor link tests...');
+  
+  // Test isAnchorLink function
+  console.assert(isAnchorLink('#section') === true, 'isAnchorLink should return true for #section');
+  console.assert(isAnchorLink('#') === false, 'isAnchorLink should return false for empty anchor');
+  console.assert(isAnchorLink('http://example.com') === false, 'isAnchorLink should return false for absolute URL');
+  console.assert(isAnchorLink('') === false, 'isAnchorLink should return false for empty string');
+  console.assert(isAnchorLink(null) === false, 'isAnchorLink should return false for null');
+  
+  // Test isRelativeToCurrentPage function
+  console.assert(isRelativeToCurrentPage('#section') === true, 'isRelativeToCurrentPage should return true for #section');
+  console.assert(isRelativeToCurrentPage('page.html#section') === true, 'isRelativeToCurrentPage should return true for page.html#section');
+  console.assert(isRelativeToCurrentPage('./page.html#section') === true, 'isRelativeToCurrentPage should return true for ./page.html#section');
+  console.assert(isRelativeToCurrentPage('../page.html#section') === true, 'isRelativeToCurrentPage should return true for ../page.html#section');
+  console.assert(isRelativeToCurrentPage('http://example.com#section') === false, 'isRelativeToCurrentPage should return false for absolute URL with anchor');
+  console.assert(isRelativeToCurrentPage('/absolute/path#section') === false, 'isRelativeToCurrentPage should return false for absolute path with anchor');
+  console.assert(isRelativeToCurrentPage('page.html') === false, 'isRelativeToCurrentPage should return false for relative path without anchor');
+  
+  // Test validateAnchorLink function
+  const baseURI = 'https://example.com/path/page.html';
+  console.assert(validateAnchorLink('#section', baseURI) === true, 'validateAnchorLink should return true for valid anchor');
+  console.assert(validateAnchorLink('#', baseURI) === false, 'validateAnchorLink should return false for empty anchor');
+  console.assert(validateAnchorLink('page.html#section', baseURI) === true, 'validateAnchorLink should return true for valid relative link with anchor');
+  console.assert(validateAnchorLink('http://example.com', baseURI) === true, 'validateAnchorLink should return true for valid absolute URL');
+  console.assert(validateAnchorLink('', baseURI) === false, 'validateAnchorLink should return false for empty string');
+  
+  // Test validateUri function with anchor links
+  console.assert(validateUri('#section', baseURI) === '#section', 'validateUri should return anchor link unchanged');
+  console.assert(validateUri('page.html#section', baseURI) === 'page.html#section', 'validateUri should preserve relative anchor links');
+  
+  // Test safeUrlParse function
+  console.assert(safeUrlParse('https://example.com') !== null, 'safeUrlParse should parse valid URL');
+  console.assert(safeUrlParse('invalid-url') === null, 'safeUrlParse should return null for invalid URL');
+  console.assert(safeUrlParse('page.html', 'https://example.com/') !== null, 'safeUrlParse should parse relative URL with base');
+  
+  // Test validateUriWithFallback function
+  console.assert(validateUriWithFallback('#section', baseURI) === '#section', 'validateUriWithFallback should handle anchor links');
+  console.assert(validateUriWithFallback('invalid-url', 'invalid-base', 'fallback') === 'fallback', 'validateUriWithFallback should use fallback on error');
+  
+  console.log('Anchor link tests completed.');
+}
+
+// Run tests when in development mode (can be triggered manually)
+if (typeof window !== 'undefined' && window.location && window.location.search.includes('test=anchor-links')) {
+  runAnchorLinkTests();
 }

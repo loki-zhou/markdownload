@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Anchor Link Conversion Test</title>
+    <base href="https://github.com/example/repo/">
+    <meta name="description" content="Test page for anchor link conversion">
+    <link rel="canonical" href="https://github.com/example/repo/test">
+</head>
+<body>
+    <h1>Anchor Link Conversion Test</h1>
+    <p>This page contains various types of links to test the anchor link conversion functionality.</p>
+    
+    <h2>Test Cases</h2>
+    <ul>
+        <li><a href="#section1">Pure anchor link</a></li>
+        <li><a href="page.html#section2">Relative link with anchor</a></li>
+        <li><a href="./docs/guide.md#setup">Relative path with anchor</a></li>
+        <li><a href="../other/page.html#section">Parent directory relative link with anchor</a></li>
+        <li><a href="/absolute/path#section">Absolute path with anchor</a></li>
+        <li><a href="https://example.com#section">Absolute URL with anchor</a></li>
+        <li><a href="https://github.com/user/repo#readme">GitHub URL with anchor</a></li>
+    </ul>
+    
+    <h2>Special Cases</h2>
+    <ul>
+        <li><a href="#">Empty anchor</a></li>
+        <li><a href="#section-with-中文">Anchor with Unicode characters</a></li>
+        <li><a href="page with spaces.html#section">URL with spaces and anchor</a></li>
+        <li><a href="?query=param#section">URL with query parameters and anchor</a></li>
+    </ul>
+    
+    <h2>Image Links</h2>
+    <p>
+        <a href="/example/repo/blob/master/image.png">
+            <img src="/example/repo/raw/master/image.png" alt="Test Image">
+        </a>
+    </p>
+    
+    <h2 id="section1">Section 1</h2>
+    <p>This is section 1 content.</p>
+    
+    <h2 id="section-with-中文">Section with Unicode Characters</h2>
+    <p>This section has Unicode characters in its ID.</p>
+    
+    <script>
+        // Log information about the page
+        console.log('Page URL:', window.location.href);
+        console.log('Base URI:', document.baseURI);
+        console.log('Document title:', document.title);
+        
+        // Test the anchor link detection functions
+        function testAnchorLink(href) {
+            const isAnchor = href.startsWith('#') && href.length > 1;
+            const isRelative = !href.includes('://') && !href.startsWith('/');
+            const hasAnchor = href.includes('#');
+            console.log(`Testing "${href}":`, { isAnchor, isRelative, hasAnchor });
+        }
+        
+        // Test various URLs
+        [
+            '#section1',
+            'page.html#section2',
+            './docs/guide.md#setup',
+            '../other/page.html#section',
+            '/absolute/path#section',
+            'https://example.com#section',
+            'https://github.com/user/repo#readme',
+            '#',
+            '#section-with-中文',
+            'page with spaces.html#section',
+            '?query=param#section'
+        ].forEach(testAnchorLink);
+    </script>
+</body>
+</html>

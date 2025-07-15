@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comprehensive Anchor Link Fix Test</title>
+    <base href="https://github.com/example/repo/">
+    <meta name="description" content="Comprehensive test page for anchor link conversion">
+    <link rel="canonical" href="https://github.com/example/repo/test">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .test-case {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 3px;
+        }
+        .test-result {
+            margin-top: 5px;
+            font-family: monospace;
+            padding: 5px;
+            background-color: #eee;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .log {
+            font-family: monospace;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Comprehensive Anchor Link Fix Test</h1>
+    <p>This page tests the anchor link fix implementation in the MarkDownload extension.</p>
+    
+    <div class="test-section">
+        <h2>Page Information</h2>
+        <div id="page-info"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Links</h2>
+        <div id="test-links"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>GitHub Specific Links</h2>
+        <div id="github-links"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Manual Tests</h2>
+        <button id="run-tests">Run All Tests</button>
+        <div id="test-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Console Log</h2>
+        <div id="console-log" class="log"></div>
+    </div>
+    
+    <script src="anchor-link-fix-comprehensive-test.js"></script>
+    <script>
+        // Capture console output
+        (function() {
+            const oldLog = console.log;
+            const oldWarn = console.warn;
+            const oldError = console.error;
+            const logElement = document.getElementById('console-log');
+            
+            console.log = function(...args) {
+                oldLog.apply(console, args);
+                const message = args.map(arg => 
+                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
+                logElement.innerHTML += `<div>[LOG] ${message}</div>`;
+                logElement.scrollTop = logElement.scrollHeight;
+            };
+            
+            console.warn = function(...args) {
+                oldWarn.apply(console, args);
+                const message = args.map(arg => 
+                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
+                logElement.innerHTML += `<div style="color: orange">[WARN] ${message}</div>`;
+                logElement.scrollTop = logElement.scrollHeight;
+            };
+            
+            console.error = function(...args) {
+                oldError.apply(console, args);
+                const message = args.map(arg => 
+                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
+                logElement.innerHTML += `<div style="color: red">[ERROR] ${message}</div>`;
+                logElement.scrollTop = logElement.scrollHeight;
+            };
+        })();
+        
+        // Display page information
+        function displayPageInfo() {
+            const pageInfo = document.getElementById('page-info');
+            pageInfo.innerHTML = `
+                <div class="test-case">
+                    <strong>Page URL:</strong> ${window.location.href}
+                </div>
+                <div class="test-case">
+                    <strong>Base URI:</strong> ${document.baseURI}
+                </div>
+                <div class="test-case">
+                    <strong>Document Title:</strong> ${document.title}
+                </div>
+                <div class="test-case">
+                    <strong>Canonical Link:</strong> ${document.querySelector('link[rel="canonical"]')?.href || 'None'}
+                </div>
+            `;
+        }
+        
+        // Test data: various types of links to test
+        const testLinks = [
+            // Pure anchor links
+            { href: '#section1', description: 'Pure anchor link' },
+            { href: '#', description: 'Empty anchor' },
+            { href: '#section-with-中文', description: 'Anchor with Unicode characters' },
+            
+            // Relative links with anchors
+            { href: 'page.html#section2', description: 'Relative link with anchor' },
+            { href: './docs/guide.md#setup', description: 'Relative path with anchor' },
+            { href: '../other/page.html#section', description: 'Parent directory relative link with anchor' },
+            { href: 'page with spaces.html#section', description: 'URL with spaces and anchor' },
+            { href: '?query=param#section', description: 'URL with query parameters and anchor' },
+            
+            // Absolute links with anchors
+            { href: '/absolute/path#section', description: 'Absolute path with anchor' },
+            { href: 'https://example.com#section', description: 'Absolute URL with anchor' },
+            { href: 'https://github.com/user/repo#readme', description: 'GitHub URL with anchor' },
+            
+            // Edge cases
+            { href: 'javascript:void(0)#section', description: 'JavaScript URL with anchor' },
+            { href: 'mailto:user@example.com#section', description: 'Mailto URL with anchor' },
+            { href: '//example.com#section', description: 'Protocol-relative URL with anchor' }
+        ];
+        
+        // GitHub specific links
+        const githubLinks = [
+            { href: '/NaiboWang/EasySpider/blob/master/media/QRCODES.png', description: 'GitHub blob link' },
+            { href: '/NaiboWang/EasySpider/raw/master/media/QRCODES.png', description: 'GitHub raw link' },
+            { href: 'chrome-extension://maamnahpkkhffffkldeloldplaolnfai/NaiboWang/EasySpider/blob/master/media/QRCODES.png', description: 'chrome-extension blob link' },
+            { href: 'chrome-extension://maamnahpkkhffffkldeloldplaolnfai/NaiboWang/EasySpider/raw/master/media/QRCODES.png', description: 'chrome-extension raw link' }
+        ];
+        
+        // Display test links
+        function displayTestLinks() {
+            const linksContainer = document.getElementById('test-links');
+            
+            testLinks.forEach((link, index) => {
+                const linkElement = document.createElement('div');
+                linkElement.className = 'test-case';
+                linkElement.innerHTML = `
+                    <strong>${index + 1}. ${link.description}</strong><br>
+                    <a href="${link.href}" id="test-link-${index}">${link.href}</a>
+                    <div class="test-result" id="test-result-${index}"></div>
+                `;
+                linksContainer.appendChild(linkElement);
+            });
+            
+            const githubLinksContainer = document.getElementById('github-links');
+            
+            githubLinks.forEach((link, index) => {
+                const linkElement = document.createElement('div');
+                linkElement.className = 'test-case';
+                linkElement.innerHTML = `
+                    <strong>${index + 1}. ${link.description}</strong><br>
+                    <a href="${link.href}" id="github-link-${index}">${link.href}</a>
+                    <div class="test-result" id="github-result-${index}"></div>
+                `;
+                githubLinksContainer.appendChild(linkElement);
+            });
+        }
+        
+        // Run tests
+        function runTests() {
+            console.log('Running anchor link tests...');
+            const resultsContainer = document.getElementById('test-results');
+            resultsContainer.innerHTML = '';
+            
+            // Test isAnchorLink and isRelativeToCurrentPage
+            testLinks.forEach((link, index) => {
+                const resultElement = document.getElementById(`test-result-${index}`);
+                const isAnchor = isAnchorLink(link.href);
+                const isRelative = isRelativeToCurrentPage(link.href);
+                
+                resultElement.innerHTML = `
+                    isAnchorLink: <strong>${isAnchor ? 'YES' : 'NO'}</strong><br>
+                    isRelativeToCurrentPage: <strong>${isRelative ? 'YES' : 'NO'}</strong>
+                `;
+                
+                console.log(`${link.description} (${link.href}):`, { isAnchor, isRelative });
+            });
+            
+            // Test GitHub specific links
+            githubLinks.forEach((link, index) => {
+                const resultElement = document.getElementById(`github-result-${index}`);
+                const baseURI = 'https://github.com/NaiboWang/EasySpider';
+                const result = validateUri(link.href, baseURI);
+                
+                resultElement.innerHTML = `
+                    validateUri result: <strong>${result}</strong>
+                `;
+                
+                console.log(`${link.description} (${link.href}) -> ${result}`);
+            });
+            
+            // Display test summary
+            const summary = document.createElement('div');
+            summary.innerHTML = `<h3>Test Summary</h3>
+                <p>Tested ${testLinks.length} different link types and ${githubLinks.length} GitHub specific links.</p>
+                <p>Check the console log for detailed results.</p>`;
+            resultsContainer.appendChild(summary);
+        }
+        
+        // Initialize the page
+        window.addEventListener('load', () => {
+            displayPageInfo();
+            displayTestLinks();
+            
+            document.getElementById('run-tests').addEventListener('click', runTests);
+            
+            console.log('Test page loaded successfully.');
+            console.log('Page URL:', window.location.href);
+            console.log('Base URI:', document.baseURI);
+        });
+    </script>
+    
+    <!-- Test sections -->
+    <h2 id="section1">Section 1</h2>
+    <p>This is section 1 content.</p>
+    
+    <h2 id="section-with-中文">Section with Unicode Characters</h2>
+    <p>This section has Unicode characters in its ID.</p>
+</body>
+</html>

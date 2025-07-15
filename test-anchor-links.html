@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Anchor Links - GitHub Style</title>
+    <base href="https://github.com/NaiboWang/EasySpider/">
+</head>
+<body>
+    <h1>Test Anchor Links</h1>
+    <p>This page simulates GitHub-style anchor links to test the MarkDownload extension.</p>
+    
+    <h2>Navigation Links</h2>
+    <ul>
+        <li><a href="#section1">Pure anchor link to Section 1</a></li>
+        <li><a href="#section2">Pure anchor link to Section 2</a></li>
+        <li><a href="README.md#installation">Relative link with anchor</a></li>
+        <li><a href="/NaiboWang/EasySpider/blob/master/README.md#usage">Absolute path with anchor</a></li>
+        <li><a href="https://github.com/NaiboWang/EasySpider#features">Full URL with anchor</a></li>
+    </ul>
+    
+    <h2>Image Links (GitHub style)</h2>
+    <p>
+        <a href="/NaiboWang/EasySpider/blob/master/media/QRCODES.png">
+            <img src="/NaiboWang/EasySpider/raw/master/media/QRCODES.png" alt="QRCodes" width="200">
+        </a>
+    </p>
+    
+    <h2 id="section1">Section 1</h2>
+    <p>This is section 1 content. <a href="#section2">Link to Section 2</a></p>
+    
+    <h2 id="section2">Section 2</h2>
+    <p>This is section 2 content. <a href="#section1">Back to Section 1</a></p>
+    
+    <h2>Mixed Content</h2>
+    <p>Here's a paragraph with <a href="#section1">internal anchor</a>, 
+    <a href="docs/guide.md#setup">relative file anchor</a>, and 
+    <a href="https://example.com">external link</a>.</p>
+    
+    <script>
+        console.log('Test page loaded');
+        console.log('Current URL:', window.location.href);
+        console.log('Base URI:', document.baseURI);
+        
+        // Simulate the extension's DOM extraction
+        console.log('DOM HTML length:', document.documentElement.outerHTML.length);
+    </script>
+</body>
+</html>

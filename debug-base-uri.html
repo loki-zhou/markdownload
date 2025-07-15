@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Base URI Debug Test</title>
+</head>
+<body>
+    <h1>Base URI Debug Test</h1>
+    <p>This is a test page to debug base URI issues.</p>
+    <a href="#section1">Link to Section 1</a>
+    <a href="/absolute/path">Absolute Path Link</a>
+    <a href="relative/path">Relative Path Link</a>
+    <a href="https://example.com">External Link</a>
+    
+    <h2 id="section1">Section 1</h2>
+    <p>This is section 1 content.</p>
+    
+    <script>
+        console.log('Current page URL:', window.location.href);
+        console.log('Base URI:', document.baseURI);
+    </script>
+</body>
+</html>
