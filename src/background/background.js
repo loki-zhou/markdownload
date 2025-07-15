@@ -164,7 +164,6 @@ async function preDownloadImages(imageList, markdown) {
     const listener = (message) => {
       if (message.type === 'pre-download-images-result') {
         chrome.runtime.onMessage.removeListener(listener);
-        chrome.offscreen.closeDocument();
         resolve(message.data);
       }
     };
@@ -187,10 +186,8 @@ async function downloadMarkdown(markdown, title, tabId, imageList = {}, mdClipsF
   // download via the downloads API
   if (options.downloadMode == 'downloadsApi' && chrome.downloads) {
     
-    // create the object url with markdown data as a blob
-    const url = URL.createObjectURL(new Blob([markdown], {
-      type: "text/markdown;charset=utf-8"
-    }));
+    // create a data URI with the markdown content
+    const url = "data:text/markdown;charset=utf-8," + encodeURIComponent(markdown);
   
     try {
 
@@ -254,7 +251,13 @@ function downloadListener(id, url) {
       // detatch this listener
       chrome.downloads.onChanged.removeListener(self);
       //release the url for the blob
-      URL.revokeObjectURL(url);
+      if (url.startsWith('blob:')) {
+        chrome.runtime.sendMessage({
+          type: 'revoke-blob-url',
+          target: 'offscreen',
+          data: url
+        });
+      }
     }
   }
   return self;

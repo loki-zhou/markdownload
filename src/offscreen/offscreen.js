@@ -27,6 +27,10 @@ chrome.runtime.onMessage.addListener(async (message) => {
       chrome.runtime.sendMessage({ type: 'create-object-url-result', data: url });
       break;
     }
+    case 'revoke-blob-url': {
+      URL.revokeObjectURL(message.data);
+      break;
+    }
   }
 });
 
