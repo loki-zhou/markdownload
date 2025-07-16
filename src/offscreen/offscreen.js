@@ -756,11 +756,32 @@ function getImageFilename(src, options, prependFilePath = true) {
     // there is no extension, so we need to figure one out
     // for now, give it an 'idunno' extension and we'll process it later
     filename = filename + '.idunno';
+    extension = '.idunno';
   }
 
-  filename = generateValidFileName(filename, options.disallowedChars);
+  // Check if filename is too long or contains problematic characters
+  const baseName = filename.substring(0, filename.lastIndexOf('.'));
+  const maxSafeLength = 60; // More conservative limit for better compatibility
+
+  if (baseName.length > maxSafeLength || /[^\w\-_.]/.test(baseName)) {
+    // Generate UUID-based filename for problematic cases
+    const uuid = generateUUID();
+    filename = uuid + extension;
+    console.log(`Using UUID filename for problematic image: ${src} -> ${filename}`);
+  } else {
+    filename = generateValidFileName(filename, options.disallowedChars);
+  }
 
   return imagePrefix + filename;
+}
+
+// Generate a simple UUID v4
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = Math.random() * 16 | 0;
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 }
 
 // function to turn the title into a valid file name
@@ -781,6 +802,24 @@ function generateValidFileName(title, disallowedChars = null) {
       if (`[\\^$.|?*+()`.includes(c)) c = `\\${c}`;
       name = name.replace(new RegExp(c, 'g'), '');
     }
+  }
+
+  // Limit filename length to avoid filesystem limitations
+  // Windows has a 255 character limit for filenames
+  const maxLength = 200; // Leave some room for extensions and paths
+  if (name.length > maxLength) {
+    // Try to preserve the file extension if it exists
+    const lastDotIndex = name.lastIndexOf('.');
+    if (lastDotIndex > 0 && lastDotIndex > name.length - 10) {
+      // Extension exists and is reasonable length
+      const extension = name.substring(lastDotIndex);
+      const baseName = name.substring(0, lastDotIndex);
+      name = baseName.substring(0, maxLength - extension.length) + extension;
+    } else {
+      // No extension or extension is too long, just truncate
+      name = name.substring(0, maxLength);
+    }
+    console.log(`Filename truncated to ${name.length} characters: ${name}`);
   }
 
   return name;
