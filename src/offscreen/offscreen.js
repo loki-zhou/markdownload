@@ -16,7 +16,7 @@ chrome.runtime.onMessage.addListener(async (message) => {
         domString = message.data.domString;
         originalUrl = message.data.originalUrl;
       }
-      
+
       const article = await getArticleFromDom(domString, originalUrl);
       chrome.runtime.sendMessage({ type: 'parse-dom-result', data: article });
       break;
@@ -70,7 +70,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
         }
       }
       baseElement.href = originalUrl;
-      
+
       // Also set the document's baseURI property if possible
       // Note: This might not work in all browsers, but we try anyway
       if (dom.baseURI !== originalUrl) {
@@ -102,7 +102,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
     });
   });
 
-  dom.body.querySelectorAll('[markdownload-latex]')?.forEach(mathJax3Node =>  {
+  dom.body.querySelectorAll('[markdownload-latex]')?.forEach(mathJax3Node => {
     const tex = mathJax3Node.getAttribute('markdownload-latex')
     const display = mathJax3Node.getAttribute('display')
     const inline = !(display && display === 'true')
@@ -152,7 +152,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
     // Readability.js will strip out headings from the dom if certain words appear in their className
     // See: https://github.com/mozilla/readability/issues/807  
     header.className = '';
-    header.outerHTML = header.outerHTML;  
+    header.outerHTML = header.outerHTML;
   });
 
   // Prevent Readability from removing the <html> element if has a 'class' attribute
@@ -169,7 +169,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
   // IMPORTANT: dom.baseURI in offscreen context might be chrome-extension:// protocol
   // so we need to be careful about using it
   let effectiveBaseURI;
-  
+
   // First priority: Use originalUrl if it's a valid URL string
   if (originalUrl && typeof originalUrl === 'string' && originalUrl.trim() !== '') {
     try {
@@ -180,7 +180,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
       // Handle invalid URL
     }
   }
-  
+
   // Second priority: Use dom.baseURI if it's not a chrome-extension URL
   if (!effectiveBaseURI && dom.baseURI && !dom.baseURI.startsWith('chrome-extension://')) {
     try {
@@ -190,11 +190,11 @@ async function getArticleFromDom(domString, originalUrl = null) {
       // Handle invalid URL
     }
   }
-  
+
   // Third priority: Check for base element in the DOM
   if (!effectiveBaseURI) {
     const baseElement = dom.head?.querySelector('base');
-    
+
     if (baseElement && baseElement.href && !baseElement.href.startsWith('chrome-extension://')) {
       try {
         new URL(baseElement.href);
@@ -204,7 +204,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
       }
     }
   }
-  
+
   // Fourth priority: Try to extract URL from the DOM content (meta tags, etc.)
   if (!effectiveBaseURI && dom.head) {
     const canonicalLink = dom.head.querySelector('link[rel="canonical"]');
@@ -217,7 +217,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
       }
     }
   }
-  
+
   // Last resort: Use a reasonable fallback based on common patterns
   if (!effectiveBaseURI) {
     // Try to determine if this looks like a GitHub page or other common site
@@ -228,12 +228,12 @@ async function getArticleFromDom(domString, originalUrl = null) {
       effectiveBaseURI = 'https://example.com/';
     }
   }
-  
+
   article.baseURI = effectiveBaseURI;
-  
+
   // also grab the page title
   article.pageTitle = dom.title;
-  
+
   // and some URL info - use the effective base URI for consistency
   try {
     const url = new URL(effectiveBaseURI);
@@ -261,7 +261,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
       // Handle both errors
     }
   }
-  
+
   // Add original URL information if provided
   if (originalUrl) {
     article.originalUrl = originalUrl;
@@ -306,13 +306,13 @@ function turndown(content, options, article) {
     filter: function (node, tdopts) {
       // if we're looking at an img node with a src
       if (node.nodeName == 'IMG' && node.getAttribute('src')) {
-        
+
         // get the original src
         let src = node.getAttribute('src')
         // set the new src
         const validatedSrc = validateUri(src, article.baseURI);
         node.setAttribute('src', validatedSrc);
-        
+
         // if we're downloading images, there's more to do.
         if (options.downloadImages) {
           // generate a file name for the image
@@ -337,9 +337,9 @@ function turndown(content, options, article) {
             ? imageFilename.substring(imageFilename.lastIndexOf('/') + 1)
             // otherwise we may need to modify the filename to uri encode parts for a pure markdown link
             : imageFilename.split('/').map(s => obsidianLink ? s : encodeURI(s)).join('/')
-          
+
           // set the new src attribute to be the local filename
-          if(options.imageStyle != 'originalSource' && options.imageStyle != 'base64') node.setAttribute('src', localSrc);
+          if (options.imageStyle != 'originalSource' && options.imageStyle != 'base64') node.setAttribute('src', localSrc);
           // pass the filter if we're making an obsidian link (or stripping links)
           return true;
         }
@@ -386,14 +386,14 @@ function turndown(content, options, article) {
       if (node.nodeName == 'A' && node.getAttribute('href')) {
         // get the href
         const href = node.getAttribute('href');
-        
+
         // Use the enhanced validateUri function with proper baseURI
         // The article.baseURI should now contain the originalUrl if available
         const validatedHref = validateUri(href, article.baseURI);
-        
+
         // set the new href
         node.setAttribute('href', validatedHref);
-        
+
         // if we are to strip links, the filter needs to pass
         return options.linkStyle == 'stripLinks';
       }
@@ -471,8 +471,8 @@ function turndown(content, options, article) {
   turndownService.addRule('pre', {
     filter: (node, tdopts) => {
       return node.nodeName == 'PRE'
-             && (!node.firstChild || node.firstChild.nodeName != 'CODE')
-             && !node.querySelector('img');
+        && (!node.firstChild || node.firstChild.nodeName != 'CODE')
+        && !node.querySelector('img');
     },
     replacement: (content, node, tdopts) => {
       return convertToFencedCodeBlock(node, tdopts);
@@ -480,12 +480,12 @@ function turndown(content, options, article) {
   });
 
   let markdown = options.frontmatter + turndownService.turndown(content)
-      + options.backmatter;
+    + options.backmatter;
 
   // strip out non-printing special characters which CodeMirror displays as a red dot
   // see: https://codemirror.net/doc/manual.html#option_specialChars
   markdown = markdown.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u00ad\u061c\u200b-\u200f\u2028\u2029\ufeff\ufff9-\ufffc]/g, '');
-  
+
   return { markdown: markdown, imageList: imageList };
 }
 
@@ -500,12 +500,12 @@ const urlParseCache = new Map();
 function safeUrlParse(urlString, baseUrl = null) {
   // Create cache key
   const cacheKey = baseUrl ? `${urlString}|${baseUrl}` : urlString;
-  
+
   // Check cache first
   if (urlParseCache.has(cacheKey)) {
     return urlParseCache.get(cacheKey);
   }
-  
+
   let result = null;
   try {
     if (baseUrl) {
@@ -516,16 +516,16 @@ function safeUrlParse(urlString, baseUrl = null) {
   } catch (error) {
     // Handle error
   }
-  
+
   // Cache the result (including null for failed parses)
   urlParseCache.set(cacheKey, result);
-  
+
   // Limit cache size to prevent memory leaks
   if (urlParseCache.size > 1000) {
     const firstKey = urlParseCache.keys().next().value;
     urlParseCache.delete(firstKey);
   }
-  
+
   return result;
 }
 
@@ -542,24 +542,24 @@ function isRelativeToCurrentPage(href) {
   if (!href || typeof href !== 'string') {
     return false;
   }
-  
+
   // Check for patterns like "page.html#section" or "./page.html#section" or "../page.html#section"
   // but not absolute URLs or protocol-relative URLs
   if (href.includes('://') || href.startsWith('//')) {
     return false;
   }
-  
+
   // Check if it contains an anchor
   const hashIndex = href.indexOf('#');
   if (hashIndex === -1) {
     return false;
   }
-  
+
   // If it starts with #, it's a pure anchor link
   if (hashIndex === 0) {
     return true;
   }
-  
+
   // Check if the part before # is a relative path
   const pathPart = href.substring(0, hashIndex);
   return !pathPart.startsWith('/') && !pathPart.includes('://');
@@ -570,13 +570,13 @@ function validateAnchorLink(href, baseURI) {
   if (!href || typeof href !== 'string') {
     return false;
   }
-  
+
   try {
     // Pure anchor links are always valid if they have content after #
     if (isAnchorLink(href)) {
       return href.length > 1; // Must have content after #
     }
-    
+
     // For relative links with anchors, validate the base part
     if (isRelativeToCurrentPage(href)) {
       const hashIndex = href.indexOf('#');
@@ -589,7 +589,7 @@ function validateAnchorLink(href, baseURI) {
       }
       return hashIndex === 0 && href.length > 1;
     }
-    
+
     // For other types of links, try to parse as URL
     new URL(href);
     return true;
@@ -602,40 +602,59 @@ function validateUri(href, baseURI) {
   // CRITICAL FIX: If baseURI starts with chrome-extension://, try to extract a proper base
   if (baseURI && baseURI.startsWith('chrome-extension://')) {
     // Try to extract domain from article properties or use a fallback
-    // This is more flexible than hardcoding GitHub
-    if (article && article.origin) {
-      baseURI = article.origin + '/';
-    } else if (article && article.hostname) {
-      baseURI = 'https://' + article.hostname + '/';
-    } else {
-      // Last resort fallback - try to guess from the href pattern
-      if (href && href.includes('/github.com/')) {
-        baseURI = 'https://github.com/';
+    if (article && article.originalUrl) {
+      try {
+        // Try to use originalUrl as baseURI
+        const url = new URL(article.originalUrl);
+        baseURI = url.origin + '/';
+      } catch (e) {
+        // If parsing fails, try other methods
+      }
+    }
+
+    // If originalUrl didn't work, try other article properties
+    if (baseURI.startsWith('chrome-extension://')) {
+      if (article && article.origin) {
+        baseURI = article.origin + '/';
+      } else if (article && article.hostname) {
+        baseURI = 'https://' + article.hostname + '/';
+      } else if (article && article.baseURI && !article.baseURI.startsWith('chrome-extension://')) {
+        baseURI = article.baseURI;
       } else {
-        baseURI = 'https://example.com/'; // Generic fallback
+        // Last resort - try to extract domain from canonical link or meta tags
+        try {
+          const dom = document.implementation.createHTMLDocument();
+          dom.documentElement.innerHTML = article.content || '';
+
+          // Try canonical link
+          const canonicalLink = dom.querySelector('link[rel="canonical"]');
+          if (canonicalLink && canonicalLink.href) {
+            const url = new URL(canonicalLink.href);
+            baseURI = url.origin + '/';
+          }
+          // Try og:url meta tag
+          else {
+            const ogUrl = dom.querySelector('meta[property="og:url"]');
+            if (ogUrl && ogUrl.content) {
+              const url = new URL(ogUrl.content);
+              baseURI = url.origin + '/';
+            }
+          }
+        } catch (e) {
+          // If all else fails, use a generic fallback
+          baseURI = 'https://example.com/';
+        }
       }
     }
   }
-  
+
   // Special handling for chrome-extension:// links
   if (href && href.startsWith('chrome-extension://')) {
-    // Generic pattern for GitHub-like paths
-    const githubPathMatch = href.match(/\/([^\/]+)\/([^\/]+)\/(raw|blob)\/([^\/]+)\/(.+)/);
-    if (githubPathMatch) {
-      const user = githubPathMatch[1];
-      const repo = githubPathMatch[2];
-      const type = githubPathMatch[3]; // raw or blob
-      const branch = githubPathMatch[4]; // master, main, etc.
-      const path = githubPathMatch[5]; // file path
-      
-      // Convert to GitHub URL
-      return `https://github.com/${user}/${repo}/${type}/${branch}/${path}`;
-    }
-    
-    // If not a GitHub pattern, try to extract the path part after the extension ID
-    const generalPathMatch = href.match(/chrome-extension:\/\/[^\/]+(.+)/);
-    if (generalPathMatch) {
-      const path = generalPathMatch[1];
+    // Extract the path part after the extension ID
+    const pathMatch = href.match(/chrome-extension:\/\/[^\/]+(.+)/);
+    if (pathMatch && pathMatch[1]) {
+      const path = pathMatch[1];
+
       // Try to construct a URL using the baseURI
       if (baseURI) {
         try {
@@ -645,26 +664,28 @@ function validateUri(href, baseURI) {
           }
           return baseURI + path;
         } catch (e) {
-          // If construction fails, return the original href
-          return href;
+          // If construction fails, continue with other methods
         }
       }
     }
+
+    // We already handled this case above, no need to duplicate code
   }
-  
+
+
   // Special handling for anchor links
   if (isAnchorLink(href)) {
     // For pure anchor links (#section), return directly without any conversion
     return href;
   }
-  
+
   if (isRelativeToCurrentPage(href)) {
     const hashIndex = href.indexOf('#');
     if (hashIndex > 0) {
       // For relative links with anchors, extract and preserve the anchor part
       const pathPart = href.substring(0, hashIndex);
       const anchorPart = href.substring(hashIndex);
-      
+
       try {
         // Validate the path part can be resolved
         const baseUrl = safeUrlParse(baseURI);
@@ -685,7 +706,7 @@ function validateUri(href, baseURI) {
       return href;
     }
   }
-  
+
   // Original logic for other types of links with enhanced error handling
   const parsedUrl = safeUrlParse(href);
   if (parsedUrl) {
@@ -724,12 +745,12 @@ function getImageFilename(src, options, prependFilePath = true) {
   // 完全禁用使用页面标题作为图片文件名前缀
   // 这可以避免长标题导致的文件名问题
   // 用户可以通过设置 options.imagePrefix 来自定义前缀
-  
+
   if (filename.includes(';base64,')) {
     // this is a base64 encoded image, so what are we going to do for a filename here?
     filename = 'image.' + filename.substring(0, filename.indexOf(';'));
   }
-  
+
   let extension = filename.substring(filename.lastIndexOf('.'));
   if (extension == filename) {
     // there is no extension, so we need to figure one out
@@ -750,10 +771,10 @@ function generateValidFileName(title, disallowedChars = null) {
   var illegalRe = /[\/\?<>\\:\*\|":]/g;
   // and non-breaking spaces (thanks @Licat)
   var name = title.replace(illegalRe, "").replace(new RegExp('\u00A0', 'g'), ' ')
-      // collapse extra whitespace
-      .replace(new RegExp(/\s+/, 'g'), ' ')
-      // remove leading/trailing whitespace that can cause issues when using {pageTitle} in a download path
-      .trim();
+    // collapse extra whitespace
+    .replace(new RegExp(/\s+/, 'g'), ' ')
+    // remove leading/trailing whitespace that can cause issues when using {pageTitle} in a download path
+    .trim();
 
   if (disallowedChars) {
     for (let c of disallowedChars) {
@@ -761,7 +782,7 @@ function generateValidFileName(title, disallowedChars = null) {
       name = name.replace(new RegExp(c, 'g'), '');
     }
   }
-  
+
   return name;
 }
 
@@ -781,7 +802,7 @@ async function preDownloadImages(imageList, markdown, options) {
           const type = githubPathMatch[3]; // raw or blob
           const branch = githubPathMatch[4]; // master, main, etc.
           const path = githubPathMatch[5]; // file path
-          
+
           // Convert to GitHub URL
           fetchUrl = `https://github.com/${user}/${repo}/${type}/${branch}/${path}`;
           console.log('Converting image URL for fetch:', src, '->', fetchUrl);
@@ -807,7 +828,7 @@ async function preDownloadImages(imageList, markdown, options) {
           }
         }
       }
-      
+
       const response = await fetch(fetchUrl);
       const blob = await response.blob();
 
@@ -821,14 +842,39 @@ async function preDownloadImages(imageList, markdown, options) {
         markdown = markdown.replaceAll(src, reader.result);
       } else {
         let newFilename = filename;
-        if (newFilename.endsWith('.idunno')) {
-          newFilename = filename.replace('.idunno', '.' + mimedb[blob.type]);
-          if (!options.imageStyle.startsWith("obsidian")) {
-            markdown = markdown.replaceAll(filename.split('/').map(s => encodeURI(s)).join('/'), newFilename.split('/').map(s => encodeURI(s)).join('/'))
-          } else {
-            markdown = markdown.replaceAll(filename, newFilename)
+
+        // Check if we need to update the file extension based on actual MIME type
+        if (newFilename.endsWith('.idunno') || blob.type && mimedb[blob.type]) {
+          let correctExtension = mimedb[blob.type];
+
+          // Handle special case for JPEG (mimedb uses "jpeg" but we prefer "jpg")
+          if (correctExtension === 'jpeg') {
+            correctExtension = 'jpg';
+          }
+
+          if (correctExtension) {
+            // Get the current extension
+            const currentExtension = newFilename.substring(newFilename.lastIndexOf('.') + 1).toLowerCase();
+
+            // If extensions don't match, update the filename
+            if (currentExtension !== correctExtension && currentExtension !== 'idunno') {
+              console.log(`Image format mismatch: expected ${currentExtension}, got ${blob.type} (${correctExtension})`);
+              newFilename = newFilename.substring(0, newFilename.lastIndexOf('.')) + '.' + correctExtension;
+            } else if (currentExtension === 'idunno') {
+              newFilename = filename.replace('.idunno', '.' + correctExtension);
+            }
+
+            // Update markdown references if filename changed
+            if (newFilename !== filename) {
+              if (!options.imageStyle.startsWith("obsidian")) {
+                markdown = markdown.replaceAll(filename.split('/').map(s => encodeURI(s)).join('/'), newFilename.split('/').map(s => encodeURI(s)).join('/'))
+              } else {
+                markdown = markdown.replaceAll(filename, newFilename)
+              }
+            }
           }
         }
+
         const blobUrl = URL.createObjectURL(blob);
         newImageList[blobUrl] = newFilename;
       }
