@@ -53,8 +53,67 @@ async function closeOffscreenDocument() {
   }
 }
 
+/**
+ * 进度阶段配置
+ * 
+ * 定义了处理流程的各个阶段，每个阶段包含：
+ * - range: 进度百分比范围 [最小值, 最大值]
+ * - message: 显示给用户的描述文本
+ */
+const progressStages = {
+  "initializing": {
+    range: [0, 5],
+    message: "准备中..."
+  },
+  "dom-fetching": {
+    range: [5, 20],
+    message: "正在获取页面内容..."
+  },
+  "content-extraction": {
+    range: [20, 50],
+    message: "正在提取文章内容..."
+  },
+  "markdown-conversion": {
+    range: [50, 80],
+    message: "正在转换为Markdown..."
+  },
+  "image-link-processing": {
+    range: [80, 95],
+    message: "正在处理图片和链接..."
+  },
+  "finalizing": {
+    range: [95, 100],
+    message: "正在准备显示结果..."
+  }
+};
+
+/**
+ * 报告进度函数
+ * @param {string} stage - 当前处理阶段的标识符
+ * @param {number|null} customPercentage - 可选，自定义进度百分比，如果为null则使用阶段的起始百分比
+ * @param {string|null} customMessage - 可选，自定义消息，如果为null则使用阶段的默认消息
+ */
+function reportProgress(stage, customPercentage = null, customMessage = null) {
+  const stageConfig = progressStages[stage];
+  if (!stageConfig) return;
+  
+  const [min, max] = stageConfig.range;
+  const percentage = customPercentage !== null ? customPercentage : min;
+  const message = customMessage || stageConfig.message;
+  
+  chrome.runtime.sendMessage({
+    type: "progress.update",
+    stage: stage,
+    percentage: percentage,
+    message: message
+  });
+}
+
 // function to convert the article content to markdown using Turndown
 async function turndown(content, options, article) {
+  // 报告进度：开始Markdown转换
+  reportProgress("markdown-conversion");
+  
   await setupOffscreenDocument('offscreen/offscreen.html', {
     url: chrome.runtime.getURL('offscreen/offscreen.html'),
     reasons: ['DOM_PARSER'],
@@ -316,6 +375,12 @@ async function notify(message, sender) {
   const options = await this.getOptions();
   // message for initial clipping of the dom
   if (message.type == "clip") {
+    // 报告进度：初始化
+    reportProgress("initializing");
+    
+    // 报告进度：开始获取DOM
+    reportProgress("dom-fetching");
+    
     // get the article info from the passed in dom
     // pass the original URL from the sender tab if available
     let originalUrl = sender?.tab?.url;
@@ -334,6 +399,9 @@ async function notify(message, sender) {
         console.error('Error getting active tab URL:', error);
       }
     }
+    
+    // 报告进度：开始提取内容
+    reportProgress("content-extraction");
     const article = await getArticleFromDom(message.dom, originalUrl);
 
     // if selection info was passed in (and we're to clip the selection)
@@ -343,13 +411,20 @@ async function notify(message, sender) {
     }
 
     // convert the article to markdown
+    // 注意：turndown函数内部已经报告了markdown-conversion阶段的进度
     const { markdown, imageList } = await convertArticleToMarkdown(article);
+
+    // 报告进度：处理图片和链接
+    reportProgress("image-link-processing");
 
     // format the title
     article.title = await formatTitle(article);
 
     // format the mdClipsFolder
     const mdClipsFolder = await formatMdClipsFolder(article);
+
+    // 报告进度：完成
+    reportProgress("finalizing");
 
     // display the data in the popup
     await chrome.runtime.sendMessage({ type: "display.md", markdown: markdown, article: article, imageList: imageList, mdClipsFolder: mdClipsFolder });
