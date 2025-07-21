@@ -9,6 +9,10 @@
   - `systemPatterns.md`: 记录了项目的架构和关键技术决策。
   - `techContext.md`: 概述了所使用的技术和工具。
   - `progress.md`: 本文档，用于跟踪项目进展。
+- **初始代码审查:**
+  - 审查了 `src/background/turndown.js` 和 `src/background/turndown-plugin-gfm.js` 以理解其对 HTML 到 Markdown 的转换和表格、数学公式处理方式。
+  - 审查了 `src/background/background.js` 和 `src/offscreen/offscreen.js` 中的主要逻辑，了解 `Readability.js` 和 `TurndownService` 的调用流程。
+  - 发现 `src/offscreen/offscreen.js` 中 `getArticleFromDom` 函数内存在针对特定 CSS 类表格的预处理逻辑，可能导致表格单元格被移除。
 
 ## 待办事项
 
@@ -18,6 +22,12 @@
   - [ ] **替换阻塞式 `webRequest`:** 评估 `declarativeNetRequest` API 是否可以替代现有的 `webRequest` 用法。
   - [ ] **更新 API 调用:** 检查并更新所有不符合 V3 规范的 API 调用，例如 `executeScript`。
   - [ ] **实现 `offscreen` 文档:** 对于需要 DOM 访问的后台任务，创建并集成 `offscreen` 解决方案。
+
+- **表格转换问题诊断与修复 (新任务):**
+  - [ ] **复现并收集日志:** 引导用户手动运行扩展，复现表格被过滤的问题，并收集浏览器控制台的详细日志（特别是 `Readability.js` 和 `Turndown.js` 相关的输出）以及最终的 Markdown 结果。
+  - [ ] **详细分析 `Readability.js` 的行为:** 根据收集到的日志，判断 `Readability.js` 是否在提取文章内容时移除了表格。
+  - [ ] **深入检查 `turndown-plugin-gfm.js` 表格规则:** 重点检查 `rules.tableCell`、`rules.tableRow` 和 `rules.table` 的过滤逻辑，特别是涉及空单元格和数学公式的部分。
+  - [ ] **修复代码:** 根据诊断结果，修改 `offscreen.js` 中可能移除表格单元格的代码，以及 `turndown-plugin-gfm.js` 中可能导致表格内容丢失或格式错误的规则。
 
 - **代码重构与现代化:**
   - [ ] **评估依赖管理:** 考虑是否应使用 npm 来管理 `turndown`, `Readability.js` 等核心库，而不是将它们直接包含在项目中。
@@ -30,10 +40,12 @@
 ## 当前状态
 
 - **项目版本:** 目前处于从 Manifest V2 到 Manifest V3 的过渡阶段。
+- **主要问题:** 用户反馈表格在转换后丢失。初步分析指向 `Readability.js` 的内容提取或 `turndown-plugin-gfm.js` 的转换规则，特别是对数学公式和空单元格的处理。
 - **主要风险:**
   - Manifest V3 的 API 限制可能会影响某些现有功能，需要寻找替代方案。
   - 确保在所有支持的浏览器上保持一致的行为和体验。
+  - 表格内容的精确转换，尤其是包含复杂数学公式的表格。
 
 ## 已知问题
 
-- *在项目审查完成之前，尚无已知问题。*
+- HTML 表格在通过 MarkDownload 扩展处理后被完全过滤掉。
