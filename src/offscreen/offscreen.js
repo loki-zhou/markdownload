@@ -21,12 +21,21 @@ chrome.runtime.onMessage.addListener(async (message) => {
       chrome.runtime.sendMessage({ type: 'parse-dom-result', data: article });
       break;
     }
+    // case 'turndown-request': {
+    //   const { content, options, article } = message.data;
+    //   const result = turndown(content, options, article);
+    //   chrome.runtime.sendMessage({ type: 'turndown-result', data: result });
+    //   break;
+    // }
     case 'turndown-request': {
       const { content, options, article } = message.data;
-      const result = turndown(content, options, article);
+      // 确保 options 中包含 article
+      const turndownOptions = { ...options, article };
+      const result = turndown(content, turndownOptions, article);
       chrome.runtime.sendMessage({ type: 'turndown-result', data: result });
       break;
     }
+
     case 'pre-download-images': {
       const { imageList, markdown, options } = message.data;
       const result = await preDownloadImages(imageList, markdown, options);
@@ -94,6 +103,13 @@ async function getArticleFromDom(domString, originalUrl = null) {
     math[randomId] = mathInfo;
   };
 
+  // 预处理表格，移除空的填充单元格
+  dom.body.querySelectorAll('table.ltx_equationgroup, table.ltx_eqn_table').forEach(table => {
+  table.querySelectorAll('td.ltx_eqn_center_padleft, td.ltx_eqn_center_padright').forEach(padCell => {
+    padCell.remove(); // 删除空的填充单元格
+  });
+  });
+
   dom.body.querySelectorAll('script[id^=MathJax-Element-]')?.forEach(mathSource => {
     const type = mathSource.attributes.type.value
     storeMathInfo(mathSource, {
@@ -123,6 +139,23 @@ async function getArticleFromDom(domString, originalUrl = null) {
       tex: kaTeXNode.querySelector('annotation').textContent,
       inline: true
     });
+  });
+
+  dom.body.querySelectorAll('.ltx_Math')?.forEach(mathNode => {
+    const annotation = mathNode.querySelector('annotation[encoding="application/x-tex"]');
+    if (annotation) {
+      let tex = annotation.textContent.trim() || '';
+      // 移除 \displaystyle 前缀
+      tex = tex.replace(/\\displaystyle\s*/g, '');
+      const isInline = mathNode.getAttribute('display') === 'inline';
+      console.log('Found ltx_Math node:', { id: mathNode.id, tex, inline: isInline }); // 调试日志
+      storeMathInfo(mathNode, {
+        tex,
+        inline: isInline
+      });
+    } else {
+      console.warn('No TeX annotation found in math node:', mathNode);
+    }
   });
 
   dom.body.querySelectorAll('[class*=highlight-text],[class*=highlight-source]')?.forEach(codeSource => {
