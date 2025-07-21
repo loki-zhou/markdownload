@@ -146,7 +146,9 @@ async function getArticleFromDom(domString, originalUrl = null) {
     if (annotation) {
       let tex = annotation.textContent.trim() || '';
       // 移除 \displaystyle 前缀
-      tex = tex.replace(/\\displaystyle\s*/g, '');
+      tex = tex.replace(/\\displaystyle\s*/g, '')
+            .replace(/\%\s*\n/g, '');
+      tex = tex.replace(/\\displaystyle\s*/g, '').replace(/\n/g, ' ').replace(/\%\s*\n/g, '').replace(/(\w)\s*=\s*(\w)/, '$1 = $2');
       const isInline = mathNode.getAttribute('display') === 'inline';
       console.log('Found ltx_Math node:', { id: mathNode.id, tex, inline: isInline }); // 调试日志
       storeMathInfo(mathNode, {

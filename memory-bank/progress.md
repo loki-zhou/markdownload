@@ -24,7 +24,8 @@
   - [ ] **实现 `offscreen` 文档:** 对于需要 DOM 访问的后台任务，创建并集成 `offscreen` 解决方案。
 
 - **表格转换问题诊断与修复 (新任务):**
-  - [ ] **复现并收集日志:** 引导用户手动运行扩展，复现表格被过滤的问题，并收集浏览器控制台的详细日志（特别是 `Readability.js` 和 `Turndown.js` 相关的输出）以及最终的 Markdown 结果。
+  - [x] **注释 `offscreen.js` 中的表格预处理逻辑:** 已在 `src/offscreen/offscreen.js` 中注释掉 `dom.body.querySelectorAll('table.ltx_equationgroup, table.ltx_eqn_table')` 相关的代码，以测试是否是该删除操作导致表格丢失。
+  - [ ] **复现并提供日志和转换结果:** `offscreen.js` 的修改未能解决表格过滤问题。等待用户再次运行扩展，并提供浏览器控制台的详细日志（特别是 `Readability.js` 和 `Turndown.js` 相关的输出）以及最终的 Markdown 结果。
   - [ ] **详细分析 `Readability.js` 的行为:** 根据收集到的日志，判断 `Readability.js` 是否在提取文章内容时移除了表格。
   - [ ] **深入检查 `turndown-plugin-gfm.js` 表格规则:** 重点检查 `rules.tableCell`、`rules.tableRow` 和 `rules.table` 的过滤逻辑，特别是涉及空单元格和数学公式的部分。
   - [ ] **修复代码:** 根据诊断结果，修改 `offscreen.js` 中可能移除表格单元格的代码，以及 `turndown-plugin-gfm.js` 中可能导致表格内容丢失或格式错误的规则。

@@ -9,16 +9,17 @@
 
 ## 后续步骤
 
-- **复现与诊断表格过滤问题:** 需要用户运行 `web-ext` 命令，在浏览器中复现表格被过滤的问题，并提供控制台日志和转换结果。
-- **详细分析 `Readability.js` 的行为:** 根据日志判断 `Readability.js` 是否在早期阶段就移除了表格内容。
-- **深入检查 `turndown-plugin-gfm.js` 的表格规则:** 特别关注 `rules.tableCell` 中对空单元格和数学公式的处理，以及 `rules.tableRow` 和 `rules.table` 的过滤逻辑。
-- **修复表格内容丢失问题:** 根据诊断结果，修改 `offscreen.js` 或 `turndown-plugin-gfm.js` 中的相关代码。
+- **注释 `offscreen.js` 中的表格预处理逻辑:** 已在 `src/offscreen/offscreen.js` 中注释掉 `dom.body.querySelectorAll('table.ltx_equationgroup, table.ltx_eqn_table')` 相关的代码，以测试是否是该删除操作导致表格丢失。
 
 ## 当前决策与考量
 
 - **主要问题:** 用户提供的包含数学公式的 HTML 表格在转换为 Markdown 时被完全过滤。
 - **初步怀疑点:**
     - `Readability.js` 在内容提取阶段可能移除了表格。
-    - `turndown-plugin-gfm.js` 中的表格和数学公式转换规则存在缺陷，导致表格内容丢失或格式错误。特别是 `rules.tableCell` 中的 `trim()` 和 `querySelector` 逻辑，以及 `rules.tableRow` 中对 `cells.filter` 的处理。
+    - `turndown-plugin-gfm.js` 中的表格和数学公式转换规则存在缺陷，导致表格内容丢失或格式错误。特别是 `rules.tableCell` 中的 `trim()` 和 `querySelector` 逻辑，以及 `rules.tableRow` 和 `rules.table` 中对 `cells.filter` 的处理。
     - `src/offscreen/offscreen.js` 中 `getArticleFromDom` 里的 `padCell.remove()` 可能移除了关键的表格填充单元格，进而影响表格结构。
-- **调试方法:** 最有效的诊断方式是在实际浏览器环境中运行扩展，通过控制台日志跟踪 `Readability.js` 和 `Turndown.js` 的处理过程。
+
+## 后续步骤
+
+- **复现并提供日志和转换结果:** `offscreen.js` 的修改未能解决表格过滤问题。请再次运行扩展，并提供浏览器控制台的详细日志（特别是 `Readability.js` 和 `Turndown.js` 相关的输出）以及最终的 Markdown 结果。
+- **检查 `turndown-plugin-gfm.js`:** 在收到用户提供的日志和转换结果后，我将重点审查 `src/background/turndown-plugin-gfm.js` 中的表格处理逻辑。
