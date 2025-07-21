@@ -142,21 +142,39 @@ async function getArticleFromDom(domString, originalUrl = null) {
   });
 
   dom.body.querySelectorAll('.ltx_Math')?.forEach(mathNode => {
+    let tex = '';
     const annotation = mathNode.querySelector('annotation[encoding="application/x-tex"]');
+
     if (annotation) {
-      let tex = annotation.textContent.trim() || '';
-      // 移除 \displaystyle 前缀
-      tex = tex.replace(/\\displaystyle\s*/g, '')
-            .replace(/\%\s*\n/g, '');
-      tex = tex.replace(/\\displaystyle\s*/g, '').replace(/\n/g, ' ').replace(/\%\s*\n/g, '').replace(/(\w)\s*=\s*(\w)/, '$1 = $2');
-      const isInline = mathNode.getAttribute('display') === 'inline';
-      console.log('Found ltx_Math node:', { id: mathNode.id, tex, inline: isInline }); // 调试日志
-      storeMathInfo(mathNode, {
-        tex,
-        inline: isInline
-      });
+        // 优先尝试从 annotation 标签获取
+        tex = annotation.textContent.trim() || '';
     } else {
-      console.warn('No TeX annotation found in math node:', mathNode);
+        // 回退逻辑：如果找不到 annotation，就从 math 元素自身的 alttext 属性获取
+        tex = mathNode.getAttribute('alttext') || '';
+        if (tex) {
+            console.log('Fallback to alttext for math node:', mathNode.id);
+        }
+    }
+
+    if (tex) {
+        // --- 统一的文本清理逻辑 ---
+        // tex = tex.replace(/\\displaystyle\\s*/g, ''); // 移除 \displaystyle
+        // tex = tex.replace(/%.*$/gm, '');             // 移除 LaTeX 注释
+        // tex = tex.replace(/\\s+/g, ' ').trim();       // 将多个空白替换为单个空格
+        // tex = tex.replace(/\\s*=\\s*/g, ' = ');       // 规范化等号两边的空格
+              tex = tex.replace(/\\displaystyle\s*/g, '')
+            .replace(/\%\s*\n/g, '');
+        // --------------------------
+
+        const isInline = mathNode.getAttribute('display') === 'inline';
+        console.log('Found ltx_Math node:', { id: mathNode.id, tex, inline: isInline });
+        storeMathInfo(mathNode, {
+            tex,
+            inline: isInline
+        });
+    } else {
+        // 只有在 annotation 和 alttext 都失败时才警告
+        console.warn('No TeX content could be found in math node:', mathNode);
     }
   });
 

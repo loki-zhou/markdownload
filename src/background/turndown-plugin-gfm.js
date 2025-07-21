@@ -48,38 +48,41 @@ var turndownPluginGfm = (function (exports) {
   var rules = {};
 
   rules.tableCell = {
-    filter: ['th', 'td'],
-    replacement: function (content, node, options) {
-      // 跳过空的单元格
-      if (!content.trim() && !node.querySelector('.ltx_Math') && !node.querySelector('[id]')) {
-        return ''; // 空单元格返回空字符串
-      }
-      // 处理包含 .ltx_Math 的单元格
-      const mathNode = node.querySelector('.ltx_Math');
-      if (mathNode) {
-        const annotation = mathNode.querySelector('annotation[encoding="application/x-tex"]');
-        if (annotation) {
-          let tex = annotation.textContent.trim().replace(/\xa0/g, '');
-          // 移除 \displaystyle
-          tex = tex.replace(/\\displaystyle\s*/g, '');
-          // 强制内联公式，调整 LaTeX 格式
-          tex = tex.replace(/\n/g, ' ').replace(/(\w)\s*=\s*(\w)/, '$1 = $2');
-          console.log('Table cell math:', { tex }); // 调试日志
-          return cell(`$${tex}$`, node);
-        }
-      }
-      // 处理 article.math 中的节点
-      const mathNodeWithId = node.querySelector('[id]');
-      if (mathNodeWithId && options.article && options.article.math && options.article.math[mathNodeWithId.id]) {
-        const mathInfo = options.article.math[mathNodeWithId.id];
-        let tex = mathInfo.tex.trim().replace(/\xa0/g, '').replace(/\n/g, ' ').replace(/\\displaystyle\s*/g, '');
-        tex = tex.replace(/(\w)\s*=\s*(\w)/, '$1 = $2');
-        return cell(`$${tex}$`, node);
-      }
-      // 回退到原始内容（清理空内容）
-      return cell(content.trim() || ' ', node);
+  filter: ['th', 'td'],
+  replacement: function (content, node, options) {
+    if (!content.trim() && !node.querySelector('.ltx_Math') && !node.querySelector('[id]')) {
+      return '';
     }
-  };
+    const mathNode = node.querySelector('.ltx_Math');
+    if (mathNode) {
+      const annotation = mathNode.querySelector('annotation[encoding="application/x-tex"]');
+      if (annotation) {
+        let tex = annotation.textContent.trim().replace(/\xa0/g, '').replace(/\\displaystyle\s*/g, '');
+        const isInline = mathNode.getAttribute('display') === 'inline';
+        // 公式编号处理
+        const eqno = node.parentNode.querySelector('.ltx_eqn_eqno .ltx_tag_equation')?.textContent || '';
+        if (eqno && !isInline) {
+          // 显示公式带编号，直接返回公式和 \tag，不作为表格单元格
+          return `$$${tex} \\tag{${eqno.trim()}}$$`;
+        }
+        tex = tex.replace(/\n/g, ' ').replace(/(\w)\s*=\s*(\w)/, '$1 = $2');
+        return cell(isInline ? `$${tex}$` : `$$${tex}$$`, node);
+      }
+    }
+    // 公式编号单元格单独处理
+    if (node.classList.contains('ltx_eqn_eqno')) {
+      return ''; // 忽略编号单元格，编号已在上一步处理
+    }
+    const mathNodeWithId = node.querySelector('[id]');
+    if (mathNodeWithId && options.article && options.article.math && options.article.math[mathNodeWithId.id]) {
+      const mathInfo = options.article.math[mathNodeWithId.id];
+      let tex = mathInfo.tex.trim().replace(/\xa0/g, '').replace(/\n/g, ' ').replace(/\\displaystyle\s*/g, '');
+      tex = tex.replace(/(\w)\s*=\s*(\w)/, '$1 = $2');
+      return cell(mathInfo.inline ? `$${tex}$` : `$$${tex}$$`, node);
+    }
+    return cell(content.trim() || ' ', node);
+  }
+};
 
   rules.tableRow = {
     filter: 'tr',
