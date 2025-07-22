@@ -4,3 +4,4 @@ xcode/MarkDownload - Markdown Web Clipper/MarkDownload - Markdown Web Clipper.xc
 .DS_Store
 node_modules
 # v2_back
+.idae

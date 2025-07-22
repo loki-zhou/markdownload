@@ -103,11 +103,27 @@ async function getArticleFromDom(domString, originalUrl = null) {
     math[randomId] = mathInfo;
   };
 
-  // 预处理表格，移除空的填充单元格
-  dom.body.querySelectorAll('table.ltx_equationgroup, table.ltx_eqn_table').forEach(table => {
-  table.querySelectorAll('td.ltx_eqn_center_padleft, td.ltx_eqn_center_padright').forEach(padCell => {
-    padCell.remove(); // 删除空的填充单元格
-  });
+  // // 预处理表格，移除空的填充单元格
+  // dom.body.querySelectorAll('table.ltx_equationgroup, table.ltx_eqn_table').forEach(table => {
+  // table.querySelectorAll('td.ltx_eqn_center_padleft, td.ltx_eqn_center_padright').forEach(padCell => {
+  //   padCell.remove(); // 删除空的填充单元格
+  // });
+  // });
+
+    // Preprocess tables to remove empty padding cells and mark for retention
+  dom.body.querySelectorAll('table.ltx_equationgroup, table.ltx_eqn_table, table.ltx_tabular').forEach(table => {
+    // Remove padding cells
+    // Add class to increase retention probability
+    table.classList.add('article-content');
+    // Ensure table has a unique ID
+    if (!table.id) {
+      storeTableInfo(table);
+    }
+    // Wrap table in a div to boost content score
+    const wrapper = dom.createElement('div');
+    wrapper.className = 'article';
+    table.parentNode.insertBefore(wrapper, table);
+    wrapper.appendChild(table);
   });
 
   dom.body.querySelectorAll('script[id^=MathJax-Element-]')?.forEach(mathSource => {
