@@ -450,14 +450,14 @@ function turndown(content, options, article) {
         // get the original src
         let src = node.getAttribute('src')
         // set the new src
-        const validatedSrc = validateUri(src, article.baseURI);
+        const validatedSrc = validateUri(src, article.baseURI, article); // Pass article to validateUri
         node.setAttribute('src', validatedSrc);
 
         // if we're downloading images, there's more to do.
         if (options.downloadImages) {
           // generate a file name for the image
           // console.log("options.downloadImages, src = ", src);
-          let imageFilename = getImageFilename(src, options, false);
+          let imageFilename = getImageFilename(src, options, article, false); // Pass article to getImageFilename
           // console.log("imageFilename =",  imageFilename)
           if (!imageList[src] || imageList[src] != imageFilename) {
             // if the imageList already contains this file, add a number to differentiate
@@ -534,7 +534,7 @@ function turndown(content, options, article) {
 
         // Use the enhanced validateUri function with proper baseURI
         // The article.baseURI should now contain the originalUrl if available
-        const validatedHref = validateUri(href, article.baseURI);
+        const validatedHref = validateUri(href, article.baseURI, article); // Pass article to validateUri
 
         // set the new href
         node.setAttribute('href', validatedHref);
@@ -743,11 +743,11 @@ function validateAnchorLink(href, baseURI) {
   }
 }
 
-function validateUri(href, baseURI) {
+function validateUri(href, baseURI, article = null) { // Add article as a parameter
   // CRITICAL FIX: If baseURI starts with chrome-extension://, try to extract a proper base
   if (baseURI && baseURI.startsWith('chrome-extension://')) {
     // Try to extract domain from article properties or use a fallback
-    if (article && article.originalUrl) {
+    if (article && article.originalUrl) { // Use the passed article parameter
       try {
         // Try to use originalUrl as baseURI
         const url = new URL(article.originalUrl);
@@ -759,17 +759,19 @@ function validateUri(href, baseURI) {
 
     // If originalUrl didn't work, try other article properties
     if (baseURI.startsWith('chrome-extension://')) {
-      if (article && article.origin) {
+      if (article && article.origin) { // Use the passed article parameter
         baseURI = article.origin + '/';
-      } else if (article && article.hostname) {
+      } else if (article && article.hostname) { // Use the passed article parameter
         baseURI = 'https://' + article.hostname + '/';
-      } else if (article && article.baseURI && !article.baseURI.startsWith('chrome-extension://')) {
+      } else if (article && article.baseURI && !article.baseURI.startsWith('chrome-extension://')) { // Use the passed article parameter
         baseURI = article.baseURI;
       } else {
         // Last resort - try to extract domain from canonical link or meta tags
         try {
+          // Ensure article.content exists before using it
+          const domContent = (article && article.content) ? article.content : '';
           const dom = document.implementation.createHTMLDocument();
-          dom.documentElement.innerHTML = article.content || '';
+          dom.documentElement.innerHTML = domContent;
 
           // Try canonical link
           const canonicalLink = dom.querySelector('link[rel="canonical"]');
@@ -880,7 +882,7 @@ function validateUri(href, baseURI) {
   return href;
 }
 
-function getImageFilename(src, options, prependFilePath = true) {
+function getImageFilename(src, options, article, prependFilePath = true) {
   const slashPos = src.lastIndexOf('/');
   const queryPos = src.indexOf('?');
   let filename = src.substring(slashPos + 1, queryPos > 0 ? queryPos : src.length);
@@ -970,7 +972,7 @@ function generateValidFileName(title, disallowedChars = null) {
   return name;
 }
 
-async function preDownloadImages(imageList, markdown, options) {
+async function preDownloadImages(imageList, markdown, options, article) { // Add article as a parameter
   let newImageList = {};
   await Promise.all(Object.entries(imageList).map(async ([src, filename]) => {
     try {
@@ -992,25 +994,9 @@ async function preDownloadImages(imageList, markdown, options) {
           fetchUrl = `https://github.com/${user}/${repo}/${type}/${branch}/${path}`;
           console.log('Converting image URL for fetch:', src, '->', fetchUrl);
         } else {
-          // Try to use the baseURI from the article if available
-          if (article && article.baseURI) {
-            const generalPathMatch = src.match(/chrome-extension:\/\/[^\/]+(.+)/);
-            if (generalPathMatch) {
-              const path = generalPathMatch[1];
-              // Try to construct a URL using the baseURI
-              try {
-                // Remove leading slash if baseURI ends with slash
-                if (path.startsWith('/') && article.baseURI.endsWith('/')) {
-                  fetchUrl = article.baseURI + path.substring(1);
-                } else {
-                  fetchUrl = article.baseURI + path;
-                }
-                console.log('Converting image URL using baseURI:', src, '->', fetchUrl);
-              } catch (e) {
-                console.warn('Failed to convert image URL:', src, e);
-              }
-            }
-          }
+          // Use validateUri to correctly resolve the chrome-extension URL
+          fetchUrl = validateUri(src, article.baseURI, article); // Pass article to validateUri
+          console.log('Converting image URL using validateUri:', src, '->', fetchUrl);
         }
       }
 

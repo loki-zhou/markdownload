@@ -1,7 +1,5 @@
 importScripts(
-  "./apache-mime-types.js",
   "./moment.min.js",
-  "./Readability.js",
   "../shared/context-menus.js",
   "../shared/default-options.js"
 );
@@ -218,7 +216,7 @@ async function convertArticleToMarkdown(article, downloadImages = null) {
   let result = await turndown(article.content, options, article);
   if (options.downloadImages && options.downloadMode == 'downloadsApi') {
     // pre-download the images
-    result = await preDownloadImages(result.imageList, result.markdown);
+    result = await preDownloadImages(result.imageList, result.markdown, article); // Pass article here
   }
   return result;
 }
