@@ -112,7 +112,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
 
     // Preprocess tables to remove empty padding cells and mark for retention
   dom.body.querySelectorAll('table.ltx_equationgroup, table.ltx_eqn_table, table.ltx_tabular').forEach(table => {
-    // Remove padding cells
+    // Remove padding cells1
     // Add class to increase retention probability
     table.classList.add('article-content');
     // Ensure table has a unique ID
