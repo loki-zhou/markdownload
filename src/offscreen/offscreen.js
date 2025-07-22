@@ -127,6 +127,52 @@ async function getArticleFromDom(domString, originalUrl = null) {
     wrapper.appendChild(table);
   });
 
+
+
+
+  // 新增规则：处理 ztext-math 或 tex2jax_ignore math-holder 类中的公式
+  dom.body.querySelectorAll('span.ztext-math, span.tex2jax_ignore.math-holder').forEach(mathNode => {
+    try {
+      // 从 data-tex 属性或 textContent 提取 LaTeX
+      const tex = mathNode.getAttribute('data-tex') || mathNode.textContent.trim();
+      // 判断是否为行内公式（ztext-math 默认行内，检查父节点或样式）
+      const inline = mathNode.classList.contains('ztext-math') || !mathNode.closest('p[data-pid]')?.style?.display?.includes('block');
+
+      if (!tex) {
+        console.warn('Empty LaTeX content in span node:', mathNode);
+        return;
+      }
+
+      const newNode = document.createElement(inline ? 'i' : 'p');
+      newNode.textContent = tex;
+
+      const parent = mathNode.parentNode;
+      if (parent) {
+        parent.insertBefore(newNode, mathNode.nextSibling);
+        parent.removeChild(mathNode);
+        storeMathInfo(newNode, { tex, inline });
+      } else {
+        console.warn('Parent node not found for span:', mathNode);
+      }
+    } catch (error) {
+      console.error('Error processing span math node:', error);
+    }
+  });
+
+    // 新增规则：匹配 MathJax 的 script 标签
+  dom.body.querySelectorAll('script[type^="math/tex"]')?.forEach(script => {
+    if (!script.id?.startsWith("MathJax-Element-")) return;
+
+    const tex = script.textContent || "";
+    const type = script.getAttribute("type") || "";
+    const inline = !type.includes("mode=display");
+
+    storeMathInfo(script, {
+      tex,
+      inline
+    });
+  });
+
   dom.body.querySelectorAll('script[id^=MathJax-Element-]')?.forEach(mathSource => {
     const type = mathSource.attributes.type.value
     storeMathInfo(mathSource, {
@@ -232,8 +278,9 @@ async function getArticleFromDom(domString, originalUrl = null) {
   dom.documentElement.removeAttribute('class')
 
   // simplify the dom into an article
-  console.log('before Readability (outerHTML):', dom.documentElement.outerHTML);
-  console.log('before Readability (dom.baseURI):', dom.baseURI);
+  // console.log('before Readability (outerHTML):', dom.documentElement.outerHTML);
+  // console.log('before Readability (dom.baseURI):', dom.baseURI);
+  console.log('hello ');
   (function fixArxivBase(dom) {
     if (!dom.baseURI.includes('arxiv.org')) return;
 
@@ -251,9 +298,9 @@ async function getArticleFromDom(domString, originalUrl = null) {
       dom.head.insertBefore(base, dom.head.firstChild);
     }
   })(dom);
-  console.log('before Readability (dom.baseURI):', dom.baseURI);
+  // console.log('before Readability (dom.baseURI):', dom.baseURI);
   const article = new Readability(dom).parse();
-  console.log('after Readability (HTML content):', article.content);
+  // console.log('after Readability (HTML content):', article.content);
 
   // get the base uri from the dom and attach it as important article info
   // Use originalUrl if available, otherwise fall back to dom.baseURI
@@ -261,7 +308,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
   // so we need to be careful about using it
   let effectiveBaseURI;
 
-  console.log('originalUrl:', originalUrl);
+  // console.log('originalUrl:', originalUrl);
   // First priority: Use originalUrl if it's a valid URL string
   if (originalUrl && typeof originalUrl === 'string' && originalUrl.trim() !== '') {
     try {
@@ -272,7 +319,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
       // Handle invalid URL
     }
   }
-  console.log('effectiveBaseURI:', effectiveBaseURI);
+  // console.log('effectiveBaseURI:', effectiveBaseURI);
   // Second priority: Use dom.baseURI if it's not a chrome-extension URL
   if (!effectiveBaseURI && dom.baseURI && !dom.baseURI.startsWith('chrome-extension://')) {
     try {
@@ -282,7 +329,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
       // Handle invalid URL
     }
   }
-  console.log('dom.baseURI:', dom.baseURI);
+  // console.log('dom.baseURI:', dom.baseURI);
 
   // Third priority: Check for base element in the DOM
   if (!effectiveBaseURI) {
@@ -399,7 +446,7 @@ function turndown(content, options, article) {
     filter: function (node, tdopts) {
       // if we're looking at an img node with a src
       if (node.nodeName == 'IMG' && node.getAttribute('src')) {
-        console.log("node =",  node)
+        // console.log("node =",  node)
         // get the original src
         let src = node.getAttribute('src')
         // set the new src
@@ -510,7 +557,7 @@ function turndown(content, options, article) {
     replacement(content, node, options) {
       const math = article.math[node.id];
       let tex = math.tex.trim().replaceAll('\xa0', '');
-
+      console.log(" replacement *** ", tex)
       if (math.inline) {
         tex = tex.replaceAll('\n', ' ');
         return `$${tex}$`;
