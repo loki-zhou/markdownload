@@ -13,6 +13,10 @@
   - 审查了 `src/background/turndown.js` 和 `src/background/turndown-plugin-gfm.js` 以理解其对 HTML 到 Markdown 的转换和表格、数学公式处理方式。
   - 审查了 `src/background/background.js` 和 `src/offscreen/offscreen.js` 中的主要逻辑，了解 `Readability.js` 和 `TurndownService` 的调用流程。
   - 发现 `src/offscreen/offscreen.js` 中 `getArticleFromDom` 函数内存在针对特定 CSS 类表格的预处理逻辑，可能导致表格单元格被移除。
+- **清理和优化 `src/background/background.js` 和 `src/offscreen/offscreen.js`:**
+    - [x] 移除了 `src/background/background.js` 中多余的 `importScripts`。
+    - [x] 解决了 `src/offscreen/offscreen.js` 中 `importScripts` 的 `ReferenceError` 问题，将其替换为在 `offscreen.html` 中通过 `<script>` 标签导入。
+    - [x] 修正了 `validateUri` 和 `getImageFilename` 函数的参数传递，确保 `article` 对象在整个处理流程中正确传递，修复了可能导致 URL 解析和图像处理错误的问题。
 
 ## 待办事项
 
