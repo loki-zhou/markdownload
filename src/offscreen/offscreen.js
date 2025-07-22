@@ -38,6 +38,7 @@ chrome.runtime.onMessage.addListener(async (message) => {
 
     case 'pre-download-images': {
       const { imageList, markdown, options } = message.data;
+      // console.log('imageList = ', imageList);
       const result = await preDownloadImages(imageList, markdown, options);
       chrome.runtime.sendMessage({ type: 'pre-download-images-result', data: result });
       break;
@@ -183,7 +184,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
         // --------------------------
 
         const isInline = mathNode.getAttribute('display') === 'inline';
-        console.log('Found ltx_Math node:', { id: mathNode.id, tex, inline: isInline });
+        // console.log('Found ltx_Math node:', { id: mathNode.id, tex, inline: isInline });
         storeMathInfo(mathNode, {
             tex,
             inline: isInline
@@ -231,7 +232,28 @@ async function getArticleFromDom(domString, originalUrl = null) {
   dom.documentElement.removeAttribute('class')
 
   // simplify the dom into an article
+  console.log('before Readability (outerHTML):', dom.documentElement.outerHTML);
+  console.log('before Readability (dom.baseURI):', dom.baseURI);
+  (function fixArxivBase(dom) {
+    if (!dom.baseURI.includes('arxiv.org')) return;
+
+    let base = dom.querySelector('base');
+    const fixedBase = dom.baseURI.endsWith('/') ? dom.baseURI : dom.baseURI + '/';
+
+    if (base) {
+      const currentHref = base.getAttribute('href');
+      if (currentHref && !currentHref.endsWith('/')) {
+        base.setAttribute('href', currentHref + '/');
+      }
+    } else {
+      base = dom.createElement('base');
+      base.setAttribute('href', fixedBase);
+      dom.head.insertBefore(base, dom.head.firstChild);
+    }
+  })(dom);
+  console.log('before Readability (dom.baseURI):', dom.baseURI);
   const article = new Readability(dom).parse();
+  console.log('after Readability (HTML content):', article.content);
 
   // get the base uri from the dom and attach it as important article info
   // Use originalUrl if available, otherwise fall back to dom.baseURI
@@ -239,6 +261,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
   // so we need to be careful about using it
   let effectiveBaseURI;
 
+  console.log('originalUrl:', originalUrl);
   // First priority: Use originalUrl if it's a valid URL string
   if (originalUrl && typeof originalUrl === 'string' && originalUrl.trim() !== '') {
     try {
@@ -249,7 +272,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
       // Handle invalid URL
     }
   }
-
+  console.log('effectiveBaseURI:', effectiveBaseURI);
   // Second priority: Use dom.baseURI if it's not a chrome-extension URL
   if (!effectiveBaseURI && dom.baseURI && !dom.baseURI.startsWith('chrome-extension://')) {
     try {
@@ -259,6 +282,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
       // Handle invalid URL
     }
   }
+  console.log('dom.baseURI:', dom.baseURI);
 
   // Third priority: Check for base element in the DOM
   if (!effectiveBaseURI) {
@@ -375,7 +399,7 @@ function turndown(content, options, article) {
     filter: function (node, tdopts) {
       // if we're looking at an img node with a src
       if (node.nodeName == 'IMG' && node.getAttribute('src')) {
-
+        console.log("node =",  node)
         // get the original src
         let src = node.getAttribute('src')
         // set the new src
@@ -385,7 +409,9 @@ function turndown(content, options, article) {
         // if we're downloading images, there's more to do.
         if (options.downloadImages) {
           // generate a file name for the image
+          // console.log("options.downloadImages, src = ", src);
           let imageFilename = getImageFilename(src, options, false);
+          // console.log("imageFilename =",  imageFilename)
           if (!imageList[src] || imageList[src] != imageFilename) {
             // if the imageList already contains this file, add a number to differentiate
             let i = 1;
@@ -395,6 +421,9 @@ function turndown(content, options, article) {
               else parts.splice(parts.length - 2, 1, i++);
               imageFilename = parts.join('.');
             }
+            // console.log("imageFilename =",  imageFilename)
+            // console.log("src =",  src)
+
             // add it to the list of images to download later
             imageList[src] = imageFilename;
           }
@@ -900,6 +929,7 @@ async function preDownloadImages(imageList, markdown, options) {
     try {
       // Convert chrome-extension URLs to proper URLs before fetching
       let fetchUrl = src;
+      console.log(`fetchUrl =  ${fetchUrl}`);
       if (src.startsWith('chrome-extension://')) {
         // Use the same logic as validateUri to convert chrome-extension URLs
         // Generic pattern for GitHub-like paths

@@ -12,30 +12,30 @@ var mdClipsFolder = '';
  * - message: 显示给用户的描述文本
  */
 const progressStages = {
-  "initializing": {
-    range: [0, 5],
-    message: "准备中..."
-  },
-  "dom-fetching": {
-    range: [5, 20],
-    message: "正在获取页面内容..."
-  },
-  "content-extraction": {
-    range: [20, 50],
-    message: "正在提取文章内容..."
-  },
-  "markdown-conversion": {
-    range: [50, 80],
-    message: "正在转换为Markdown..."
-  },
-  "image-link-processing": {
-    range: [80, 95],
-    message: "正在处理图片和链接..."
-  },
-  "finalizing": {
-    range: [95, 100],
-    message: "正在准备显示结果..."
-  }
+    "initializing": {
+        range: [0, 5],
+        message: "准备中..."
+    },
+    "dom-fetching": {
+        range: [5, 20],
+        message: "正在获取页面内容..."
+    },
+    "content-extraction": {
+        range: [20, 50],
+        message: "正在提取文章内容..."
+    },
+    "markdown-conversion": {
+        range: [50, 80],
+        message: "正在转换为Markdown..."
+    },
+    "image-link-processing": {
+        range: [80, 95],
+        message: "正在处理图片和链接..."
+    },
+    "finalizing": {
+        range: [95, 100],
+        message: "正在准备显示结果..."
+    }
 };
 
 const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -50,10 +50,10 @@ cm.on("cursorActivity", (cm) => {
     var a = document.getElementById("downloadSelection");
 
     if (somethingSelected) {
-        if(a.style.display != "block") a.style.display = "block";
+        if (a.style.display != "block") a.style.display = "block";
     }
     else {
-        if(a.style.display != "none") a.style.display = "none";
+        if (a.style.display != "none") a.style.display = "none";
     }
 });
 document.getElementById("download").addEventListener("click", download);
@@ -91,14 +91,26 @@ const toggleIncludeTemplate = options => {
     options.includeTemplate = !options.includeTemplate;
     document.querySelector("#includeTemplate").classList.toggle("checked");
     chrome.storage.sync.set(options).then(() => {
+        // 更新主菜单项
         chrome.contextMenus.update("toggle-includeTemplate", {
             checked: options.includeTemplate
+        }).catch(err => {
+            console.warn("无法更新 toggle-includeTemplate 菜单项:", err);
         });
+
+        // 尝试更新标签页菜单项，但如果不存在则忽略错误
         try {
             chrome.contextMenus.update("tabtoggle-includeTemplate", {
                 checked: options.includeTemplate
+            }).catch(err => {
+                // 忽略错误，因为在某些浏览器中这个菜单项可能不存在
+                console.debug("tabtoggle-includeTemplate 菜单项不存在，这是正常的");
             });
-        } catch { }
+        } catch (err) {
+            // 忽略任何其他错误
+            console.debug("处理 tabtoggle-includeTemplate 时出错，这是正常的");
+        }
+
         return clipSite()
     }).catch((error) => {
         console.error(error);
@@ -109,14 +121,25 @@ const toggleDownloadImages = options => {
     options.downloadImages = !options.downloadImages;
     document.querySelector("#downloadImages").classList.toggle("checked");
     chrome.storage.sync.set(options).then(() => {
+        // 更新主菜单项
         chrome.contextMenus.update("toggle-downloadImages", {
             checked: options.downloadImages
+        }).catch(err => {
+            console.warn("无法更新 toggle-downloadImages 菜单项:", err);
         });
+
+        // 尝试更新标签页菜单项，但如果不存在则忽略错误
         try {
             chrome.contextMenus.update("tabtoggle-downloadImages", {
                 checked: options.downloadImages
+            }).catch(err => {
+                // 忽略错误，因为在某些浏览器中这个菜单项可能不存在
+                console.debug("tabtoggle-downloadImages 菜单项不存在，这是正常的");
             });
-        } catch { }
+        } catch (err) {
+            // 忽略任何其他错误
+            console.debug("处理 tabtoggle-downloadImages 时出错，这是正常的");
+        }
     }).catch((error) => {
         console.error(error);
     });
@@ -176,7 +199,7 @@ const clipSite = id => {
 // inject the necessary scripts
 chrome.storage.sync.get(defaultOptions).then(options => {
     checkInitialSettings(options);
-    
+
     document.getElementById("selected").addEventListener("click", (e) => {
         e.preventDefault();
         toggleClipSelection(options);
@@ -193,7 +216,7 @@ chrome.storage.sync.get(defaultOptions).then(options => {
         e.preventDefault();
         toggleDownloadImages(options);
     });
-    
+
     return chrome.tabs.query({
         currentWindow: true,
         active: true
@@ -205,13 +228,13 @@ chrome.storage.sync.get(defaultOptions).then(options => {
         target: { tabId: id },
         files: ["/contentScript/contentScript.js"]
     })
-    .then( () => {
-        console.info("Successfully injected MarkDownload content script");
-        return clipSite(id);
-    }).catch( (error) => {
-        console.error(error);
-        showError(error);
-    });
+        .then(() => {
+            console.info("Successfully injected MarkDownload content script");
+            return clipSite(id);
+        }).catch((error) => {
+            console.error(error);
+            showError(error);
+        });
 });
 
 // listen for notifications from the background page
@@ -263,12 +286,12 @@ function notify(message) {
         document.getElementById("title").value = message.article.title;
         imageList = message.imageList;
         mdClipsFolder = message.mdClipsFolder;
-        
+
         // show the hidden elements
         document.getElementById("container").style.display = 'flex';
         document.getElementById("spinner").style.display = 'none';
         document.getElementById("progress-container").style.display = 'none';
-         // focus the download button
+        // focus the download button
         document.getElementById("download").focus();
         cm.refresh();
     }
@@ -297,31 +320,31 @@ function updateProgress(stage, percentage, message) {
     const progressFill = document.querySelector('.progress-fill');
     const progressText = document.querySelector('.progress-text');
     const progressPercentage = document.querySelector('.progress-percentage');
-    
+
     // 显示进度容器，隐藏spinner
     document.getElementById("spinner").style.display = 'none';
     progressContainer.style.display = 'flex';
-    
+
     // 更新进度条
     if (progressFill && progressText && progressPercentage) {
         // 如果提供了具体百分比，则使用它；否则使用阶段的起始百分比
         const stageConfig = progressStages[stage];
-        const actualPercentage = percentage !== undefined ? 
+        const actualPercentage = percentage !== undefined ?
             percentage : (stageConfig ? stageConfig.range[0] : 0);
-        
+
         // 更新UI元素
         progressFill.style.width = `${actualPercentage}%`;
         progressText.textContent = message || (stageConfig ? stageConfig.message : "处理中...");
         progressPercentage.textContent = `${Math.round(actualPercentage)}%`;
-        
+
         // 清除之前的超时计时器
         if (progressTimeout) {
             clearTimeout(progressTimeout);
         }
-        
+
         // 记录最后更新时间
         lastProgressUpdate = Date.now();
-        
+
         // 设置新的超时计时器，如果10秒内没有更新，显示提示信息
         progressTimeout = setTimeout(() => {
             if (Date.now() - lastProgressUpdate > 10000) {

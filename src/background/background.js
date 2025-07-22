@@ -211,7 +211,7 @@ async function convertArticleToMarkdown(article, downloadImages = null) {
   else {
     options.frontmatter = options.backmatter = '';
   }
-
+  
   options.imagePrefix = textReplace(options.imagePrefix, article, options.disallowedChars)
     .split('/').map(s => generateValidFileName(s, options.disallowedChars)).join('/');
 
