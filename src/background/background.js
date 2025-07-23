@@ -578,8 +578,8 @@ async function getArticleFromContent(tabId, selection = false) {
     // get the tab URL to pass as originalUrl
     const tab = await chrome.tabs.get(tabId);
     const originalUrl = tab?.url;
-    console.log('DEBUG background getArticleFromContent: tab =', tab);
-    console.log('DEBUG background getArticleFromContent: originalUrl =', originalUrl);
+    // console.log('DEBUG background getArticleFromContent: tab =', tab);
+    // console.log('DEBUG background getArticleFromContent: originalUrl =', originalUrl);
 
     const article = await getArticleFromDom(results.dom, originalUrl);
 

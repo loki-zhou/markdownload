@@ -394,12 +394,12 @@ async function getArticleFromDom(domString, originalUrl = null) {
   }
   
   // Pass the final, clean document to Readability
-  console.log('Final HTML being passed to Readability:', docToParse.documentElement.outerHTML);
+  // console.log('Final HTML being passed to Readability:', docToParse.documentElement.outerHTML);
   const article = new Readability(docToParse).parse();
   
-  console.log('Parsed Article Content:', article ? article.content : 'null');
+  // console.log('Parsed Article Content:', article ? article.content : 'null');
 
-  console.log('after Readability:', article);
+  // console.log('after Readability:', article);
 
   // get the base uri from the dom and attach it as important article info
   // Use originalUrl if available, otherwise fall back to dom.baseURI
@@ -656,7 +656,7 @@ function turndown(content, options, article) {
     replacement(content, node, options) {
       const math = article.math[node.id];
       let tex = math.tex.trim().replaceAll('\xa0', '');
-      console.log(" replacement *** ", tex)
+      // console.log(" replacement *** ", tex)
       if (math.inline) {
         tex = tex.replaceAll('\n', ' ');
         return `$${tex}$`;
