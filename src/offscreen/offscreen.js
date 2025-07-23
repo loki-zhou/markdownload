@@ -301,84 +301,103 @@ async function getArticleFromDom(domString, originalUrl = null) {
   })(dom);
   // console.log('before Readability (dom.baseURI):', dom.baseURI);
 
-// Function to handle special processing for ChatGPT pages
-function preprocessChatGPTPage(dom) {
-  // 1. Create a new, clean document to build our article in
-  const newDoc = document.implementation.createHTMLDocument(dom.title);
-
-  // 2. Find ALL message elements (both user and assistant)
-  const allMessageElements = dom.querySelectorAll('[data-message-author-role]');
-
-  if (allMessageElements.length === 0) {
-    console.warn("No conversation messages found. Readability might not find any content.");
-    return dom; // Return original dom if no messages are found
-  }
-
-  // 3. Create a main container for the article content in the new document
-  const articleContainer = newDoc.createElement('div');
-  articleContainer.id = 'readability-content'; // A strong hint for Readability
-
-  // 4. Loop through all messages and add them to our container with speaker labels
-  allMessageElements.forEach(msgElement => {
-    const role = msgElement.getAttribute('data-message-author-role');
-    const contentContainer = msgElement.querySelector('.whitespace-pre-wrap, .markdown.prose');
-
-    if (contentContainer) {
-      // Create a wrapper for this turn of the conversation
+  function preprocessChatGPTPage(dom) {
+    // 1. Create a new, clean document to build our article in
+    const newDoc = document.implementation.createHTMLDocument(dom.title);
+  
+    // 2. Find ALL message elements (both user and assistant)
+    const allMessageElements = dom.querySelectorAll('[data-message-author-role]');
+  
+    if (allMessageElements.length === 0) {
+      console.warn("No conversation messages found. Readability will not find any content.");
+      return dom; // Return original dom if no messages are found
+    }
+  
+    // 3. Create a main container for the article content in the new document
+    const articleContainer = newDoc.createElement('div');
+    articleContainer.id = 'readability-content'; // A strong hint for Readability
+  
+    // 4. Loop through all messages and add them to our container
+    allMessageElements.forEach(msgElement => {
+      const role = msgElement.getAttribute('data-message-author-role');
+      
+      // Create a wrapper for this entire conversational turn
       const turnWrapper = newDoc.createElement('div');
-      turnWrapper.style.marginBottom = '20px'; // Add some space between turns
-
-      // Create a label to indicate the speaker (e.g., "You:" or "ChatGPT:")
-      const speakerLabel = newDoc.createElement('h5'); // Using h5 for semantic structure
-      if (role === 'user') {
-        speakerLabel.textContent = 'You:';
-      } else if (role === 'assistant') {
-        speakerLabel.textContent = 'ChatGPT:';
-      }
+      turnWrapper.style.marginBottom = '24px'; // Add visual separation
+  
+      // Create and append the speaker label (e.g., "You:" or "ChatGPT:")
+      const speakerLabel = newDoc.createElement('h5');
+      speakerLabel.textContent = role === 'user' ? 'You:' : 'ChatGPT:';
       speakerLabel.style.fontWeight = 'bold';
       speakerLabel.style.marginTop = '0';
-      speakerLabel.style.marginBottom = '5px';
-      
-      // Clone the actual content
-      const clonedContent = contentContainer.cloneNode(true);
-      
-      // Append the label and the content to the wrapper
+      speakerLabel.style.marginBottom = '8px';
       turnWrapper.appendChild(speakerLabel);
-      turnWrapper.appendChild(clonedContent);
-      
-      // Append the entire turn to our main article container
-      articleContainer.appendChild(turnWrapper);
-    }
-  });
-
-  // 5. Replace the body of our new document with the curated article container
-  newDoc.body.innerHTML = ''; // Clear the body
-  newDoc.body.appendChild(articleContainer);
   
-  // 6. Return the new, simplified document for Readability to parse
-  console.log("Created a simplified DOM with the full conversation for Readability.");
-  return newDoc;
-}
-
-// --- Your main execution logic remains the same ---
-
-  // Check if it's a ChatGPT page
+      // --- NEW: Find and append all images in the message ---
+      const imageElements = msgElement.querySelectorAll('img');
+      if (imageElements.length > 0) {
+          imageElements.forEach(img => {
+              const clonedImg = img.cloneNode(true);
+              // Optional: Add some styling to make images display nicely
+              clonedImg.style.maxWidth = '100%';
+              clonedImg.style.height = 'auto';
+              clonedImg.style.display = 'block';
+              clonedImg.style.marginBottom = '10px';
+              turnWrapper.appendChild(clonedImg);
+          });
+      }
+  
+      // Find and append the text content of the message
+      const textContentContainer = msgElement.querySelector('.whitespace-pre-wrap, .markdown.prose');
+      if (textContentContainer) {
+        turnWrapper.appendChild(textContentContainer.cloneNode(true));
+      }
+      
+      // Add the fully constructed "turn" to our main article container
+      articleContainer.appendChild(turnWrapper);
+    });
+  
+    // 5. Replace the body of our new document with the curated article container
+    newDoc.body.innerHTML = ''; // Clear any default body content
+    newDoc.body.appendChild(articleContainer);
+    
+    // 6. Return the new, simplified document for Readability to parse
+    console.log("Created a simplified DOM with the full conversation (including images) for Readability.");
+    return newDoc;
+  }
+  
+  // --- Your main execution logic ---
+  
+  // Assume 'dom' is the original document object
   const isChatGPTPage = dom.title && (
     dom.title.includes("Readability library usage") ||
     (dom.baseURI && dom.baseURI.includes("chatgpt.com"))
   );
-
-  // Clone the original DOM to avoid modifying it directly
+  
+  // We'll work on a clone to avoid changing the live page
   let docToParse = dom.cloneNode(true);
-
-  // If it is a ChatGPT page, apply special processing
+  
   if (isChatGPTPage) {
+    // Special handling for arXiv to ensure correct image path resolution
+    if (docToParse.baseURI && docToParse.baseURI.includes("arxiv.org") && !docToParse.baseURI.endsWith('/')) {
+        console.log("Fixing arXiv baseURI...");
+        let baseEl = docToParse.querySelector('base');
+        if (!baseEl) {
+            baseEl = docToParse.createElement('base');
+            docToParse.head.prepend(baseEl);
+        }
+        baseEl.setAttribute('href', docToParse.baseURI + '/');
+    }
+  
+    // Now, process the page to extract the full conversation
     docToParse = preprocessChatGPTPage(docToParse);
   }
-
-  // Now, pass the potentially modified document to Readability
-  console.log('before Readability (outerHTML):', docToParse.documentElement.outerHTML);
-  let article = new Readability(docToParse).parse();
+  
+  // Pass the final, clean document to Readability
+  console.log('Final HTML being passed to Readability:', docToParse.documentElement.outerHTML);
+  const article = new Readability(docToParse).parse();
+  
+  console.log('Parsed Article Content:', article ? article.content : 'null');
 
   console.log('after Readability:', article);
 
