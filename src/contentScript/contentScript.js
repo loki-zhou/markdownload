@@ -168,3 +168,12 @@ function downloadImage(filename, url) {
     s.src = chrome.runtime.getURL('contentScript/pageContext.js');
     (document.head||document.documentElement).appendChild(s);
 })()
+
+// Add a message listener to handle requests from the background script
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.type === "getSelectionAndDom") {
+        const result = getSelectionAndDom();
+        sendResponse(result); // Send the result back to the background script
+        return true; // Indicates that the response will be sent asynchronously
+    }
+});

@@ -140,6 +140,7 @@ const toggleDownloadImages = options => {
             // 忽略任何其他错误
             console.debug("处理 tabtoggle-downloadImages 时出错，这是正常的");
         }
+        return clipSite(); // 添加这一行
     }).catch((error) => {
         console.error(error);
     });
@@ -160,40 +161,46 @@ function getSelectionAndDom() {
     };
 }
 
-const clipSite = id => {
-    return chrome.scripting.executeScript({
-        target: { tabId: id },
-        func: getSelectionAndDom
-    })
-        .then((result) => {
-            if (result && result[0] && result[0].result) {
-                showOrHideClipOption(result[0].result.selection);
-                let message = {
-                    type: "clip",
-                    dom: result[0].result.dom,
-                    selection: result[0].result.selection
+const clipSite = () => {
+    return chrome.tabs.query({
+        currentWindow: true,
+        active: true
+    }).then((tabs) => {
+        const id = tabs[0].id;
+        return chrome.scripting.executeScript({
+            target: { tabId: id },
+            func: getSelectionAndDom
+        })
+            .then((result) => {
+                if (result && result[0] && result[0].result) {
+                    showOrHideClipOption(result[0].result.selection);
+                    let message = {
+                        type: "clip",
+                        dom: result[0].result.dom,
+                        selection: result[0].result.selection
+                    }
+                    return chrome.storage.sync.get(defaultOptions).then(options => {
+                        chrome.runtime.sendMessage({
+                            ...message,
+                            ...options
+                        });
+                    }).catch(err => {
+                        console.error(err);
+                        showError(err)
+                        return chrome.runtime.sendMessage({
+                            ...message,
+                            ...defaultOptions
+                        });
+                    }).catch(err => {
+                        console.error(err);
+                        showError(err)
+                    });
                 }
-                return chrome.storage.sync.get(defaultOptions).then(options => {
-                    chrome.runtime.sendMessage({
-                        ...message,
-                        ...options
-                    });
-                }).catch(err => {
-                    console.error(err);
-                    showError(err)
-                    return chrome.runtime.sendMessage({
-                        ...message,
-                        ...defaultOptions
-                    });
-                }).catch(err => {
-                    console.error(err);
-                    showError(err)
-                });
-            }
-        }).catch(err => {
-            console.error(err);
-            showError(err)
-        });
+            }).catch(err => {
+                console.error(err);
+                showError(err)
+            });
+    });
 }
 
 // inject the necessary scripts
@@ -230,7 +237,7 @@ chrome.storage.sync.get(defaultOptions).then(options => {
     })
         .then(() => {
             console.info("Successfully injected MarkDownload content script");
-            return clipSite(id);
+            return clipSite(); // remove id parameter
         }).catch((error) => {
             console.error(error);
             showError(error);
@@ -299,6 +306,10 @@ function notify(message) {
     else if (message.type == "progress.update") {
         updateProgress(message.stage, message.percentage, message.message);
     }
+    // 处理重新剪辑消息，从background script发送
+    else if (message.type == "reclip") {
+        clipSite();
+    }
 }
 
 /**
@@ -361,4 +372,3 @@ function showError(err) {
     document.getElementById("progress-container").style.display = 'none';
     cm.setValue(`Error clipping the page\n\n${err}`)
 }
-

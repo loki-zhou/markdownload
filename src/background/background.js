@@ -524,19 +524,17 @@ async function toggleSetting(setting, options = null) {
           checked: options.downloadImages
         });
       } catch { }
+      // Send a message to popup.js to re-clip the page with the new settings
+      chrome.runtime.sendMessage({ type: "reclip" }).catch(err => {
+        console.warn("无法向popup发送reclip消息:", err);
+      });
     }
   }
 }
 
 // this function ensures the content script is loaded (and loads it if it isn't)
 async function ensureScripts(tabId) {
-  const results = await chrome.scripting.executeScript({ target: { tabId: tabId }, func: () => typeof getSelectionAndDom === 'function' });
-  // The content script's last expression will be true if the function
-  // has been defined. If this is not the case, then we need to run
-  // pageScraper.js to define function getSelectionAndDom.
-  if (!results || results[0].result !== true) {
-    await chrome.scripting.executeScript({ target: { tabId: tabId }, files: ["/contentScript/contentScript.js"] });
-  }
+  await chrome.scripting.executeScript({ target: { tabId: tabId }, files: ["/contentScript/contentScript.js"] });
 }
 
 // get Readability article info from the dom passed in
@@ -569,23 +567,26 @@ async function getArticleFromDom(domString, originalUrl = null) {
 // get Readability article info from the content of the tab id passed in
 // `selection` is a bool indicating whether we should just get the selected text
 async function getArticleFromContent(tabId, selection = false) {
-  // run the content script function to get the details
-  const results = await chrome.scripting.executeScript({ target: { tabId: tabId }, func: getSelectionAndDom });
+  // ensure the content script is loaded
+  await ensureScripts(tabId);
+
+  // send a message to the content script to get the details
+  const results = await chrome.tabs.sendMessage(tabId, { type: "getSelectionAndDom" });
 
   // make sure we actually got a valid result
-  if (results && results[0] && results[0].result.dom) {
+  if (results && results.dom) {
     // get the tab URL to pass as originalUrl
     const tab = await chrome.tabs.get(tabId);
     const originalUrl = tab?.url;
     console.log('DEBUG background getArticleFromContent: tab =', tab);
     console.log('DEBUG background getArticleFromContent: originalUrl =', originalUrl);
 
-    const article = await getArticleFromDom(results[0].result.dom, originalUrl);
+    const article = await getArticleFromDom(results.dom, originalUrl);
 
     // if we're to grab the selection, and we've selected something,
     // replace the article content with the selection
-    if (selection && results[0].result.selection) {
-      article.content = results[0].result.selection;
+    if (selection && results.selection) {
+      article.content = results.selection;
     }
 
     //return the article
