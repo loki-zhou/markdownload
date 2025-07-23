@@ -66,6 +66,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
   if (dom.documentElement.nodeName == "parsererror") {
     console.error("error while parsing");
   }
+  // console.log("***** dom ******** =", dom.documentElement.outerHTML);
 
   // Set the base URI correctly if we have the original URL
   // This is crucial for proper relative link resolution
@@ -111,7 +112,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
   // });
   // });
 
-    // Preprocess tables to remove empty padding cells and mark for retention
+  // Preprocess tables to remove empty padding cells and mark for retention
   dom.body.querySelectorAll('table.ltx_equationgroup, table.ltx_eqn_table, table.ltx_tabular').forEach(table => {
     // Remove padding cells1
     // Add class to increase retention probability
@@ -159,7 +160,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
     }
   });
 
-    // 新增规则：匹配 MathJax 的 script 标签
+  // 新增规则：匹配 MathJax 的 script 标签
   dom.body.querySelectorAll('script[type^="math/tex"]')?.forEach(script => {
     if (!script.id?.startsWith("MathJax-Element-")) return;
 
@@ -209,35 +210,35 @@ async function getArticleFromDom(domString, originalUrl = null) {
     const annotation = mathNode.querySelector('annotation[encoding="application/x-tex"]');
 
     if (annotation) {
-        // 优先尝试从 annotation 标签获取
-        tex = annotation.textContent.trim() || '';
+      // 优先尝试从 annotation 标签获取
+      tex = annotation.textContent.trim() || '';
     } else {
-        // 回退逻辑：如果找不到 annotation，就从 math 元素自身的 alttext 属性获取
-        tex = mathNode.getAttribute('alttext') || '';
-        if (tex) {
-            console.log('Fallback to alttext for math node:', mathNode.id);
-        }
+      // 回退逻辑：如果找不到 annotation，就从 math 元素自身的 alttext 属性获取
+      tex = mathNode.getAttribute('alttext') || '';
+      if (tex) {
+        console.log('Fallback to alttext for math node:', mathNode.id);
+      }
     }
 
     if (tex) {
-        // --- 统一的文本清理逻辑 ---
-        // tex = tex.replace(/\\displaystyle\\s*/g, ''); // 移除 \displaystyle
-        // tex = tex.replace(/%.*$/gm, '');             // 移除 LaTeX 注释
-        // tex = tex.replace(/\\s+/g, ' ').trim();       // 将多个空白替换为单个空格
-        // tex = tex.replace(/\\s*=\\s*/g, ' = ');       // 规范化等号两边的空格
-              tex = tex.replace(/\\displaystyle\s*/g, '')
-            .replace(/\%\s*\n/g, '');
-        // --------------------------
+      // --- 统一的文本清理逻辑 ---
+      // tex = tex.replace(/\\displaystyle\\s*/g, ''); // 移除 \displaystyle
+      // tex = tex.replace(/%.*$/gm, '');             // 移除 LaTeX 注释
+      // tex = tex.replace(/\\s+/g, ' ').trim();       // 将多个空白替换为单个空格
+      // tex = tex.replace(/\\s*=\\s*/g, ' = ');       // 规范化等号两边的空格
+      tex = tex.replace(/\\displaystyle\s*/g, '')
+        .replace(/\%\s*\n/g, '');
+      // --------------------------
 
-        const isInline = mathNode.getAttribute('display') === 'inline';
-        // console.log('Found ltx_Math node:', { id: mathNode.id, tex, inline: isInline });
-        storeMathInfo(mathNode, {
-            tex,
-            inline: isInline
-        });
+      const isInline = mathNode.getAttribute('display') === 'inline';
+      // console.log('Found ltx_Math node:', { id: mathNode.id, tex, inline: isInline });
+      storeMathInfo(mathNode, {
+        tex,
+        inline: isInline
+      });
     } else {
-        // 只有在 annotation 和 alttext 都失败时才警告
-        console.warn('No TeX content could be found in math node:', mathNode);
+      // 只有在 annotation 和 alttext 都失败时才警告
+      console.warn('No TeX content could be found in math node:', mathNode);
     }
   });
 
@@ -278,7 +279,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
   dom.documentElement.removeAttribute('class')
 
   // simplify the dom into an article
-  // console.log('before Readability (outerHTML):', dom.documentElement.outerHTML);
+  
   // console.log('before Readability (dom.baseURI):', dom.baseURI);
   console.log('hello ');
   (function fixArxivBase(dom) {
@@ -299,8 +300,87 @@ async function getArticleFromDom(domString, originalUrl = null) {
     }
   })(dom);
   // console.log('before Readability (dom.baseURI):', dom.baseURI);
-  const article = new Readability(dom).parse();
-  // console.log('after Readability (HTML content):', article.content);
+
+// Function to handle special processing for ChatGPT pages
+function preprocessChatGPTPage(dom) {
+  // 1. Create a new, clean document to build our article in
+  const newDoc = document.implementation.createHTMLDocument(dom.title);
+
+  // 2. Find ALL message elements (both user and assistant)
+  const allMessageElements = dom.querySelectorAll('[data-message-author-role]');
+
+  if (allMessageElements.length === 0) {
+    console.warn("No conversation messages found. Readability might not find any content.");
+    return dom; // Return original dom if no messages are found
+  }
+
+  // 3. Create a main container for the article content in the new document
+  const articleContainer = newDoc.createElement('div');
+  articleContainer.id = 'readability-content'; // A strong hint for Readability
+
+  // 4. Loop through all messages and add them to our container with speaker labels
+  allMessageElements.forEach(msgElement => {
+    const role = msgElement.getAttribute('data-message-author-role');
+    const contentContainer = msgElement.querySelector('.whitespace-pre-wrap, .markdown.prose');
+
+    if (contentContainer) {
+      // Create a wrapper for this turn of the conversation
+      const turnWrapper = newDoc.createElement('div');
+      turnWrapper.style.marginBottom = '20px'; // Add some space between turns
+
+      // Create a label to indicate the speaker (e.g., "You:" or "ChatGPT:")
+      const speakerLabel = newDoc.createElement('h5'); // Using h5 for semantic structure
+      if (role === 'user') {
+        speakerLabel.textContent = 'You:';
+      } else if (role === 'assistant') {
+        speakerLabel.textContent = 'ChatGPT:';
+      }
+      speakerLabel.style.fontWeight = 'bold';
+      speakerLabel.style.marginTop = '0';
+      speakerLabel.style.marginBottom = '5px';
+      
+      // Clone the actual content
+      const clonedContent = contentContainer.cloneNode(true);
+      
+      // Append the label and the content to the wrapper
+      turnWrapper.appendChild(speakerLabel);
+      turnWrapper.appendChild(clonedContent);
+      
+      // Append the entire turn to our main article container
+      articleContainer.appendChild(turnWrapper);
+    }
+  });
+
+  // 5. Replace the body of our new document with the curated article container
+  newDoc.body.innerHTML = ''; // Clear the body
+  newDoc.body.appendChild(articleContainer);
+  
+  // 6. Return the new, simplified document for Readability to parse
+  console.log("Created a simplified DOM with the full conversation for Readability.");
+  return newDoc;
+}
+
+// --- Your main execution logic remains the same ---
+
+  // Check if it's a ChatGPT page
+  const isChatGPTPage = dom.title && (
+    dom.title.includes("Readability library usage") ||
+    (dom.baseURI && dom.baseURI.includes("chatgpt.com"))
+  );
+
+  // Clone the original DOM to avoid modifying it directly
+  let docToParse = dom.cloneNode(true);
+
+  // If it is a ChatGPT page, apply special processing
+  if (isChatGPTPage) {
+    docToParse = preprocessChatGPTPage(docToParse);
+  }
+
+  // Now, pass the potentially modified document to Readability
+  console.log('before Readability (outerHTML):', docToParse.documentElement.outerHTML);
+  let article = new Readability(docToParse).parse();
+
+  console.log('after Readability:', article);
 
   // get the base uri from the dom and attach it as important article info
   // Use originalUrl if available, otherwise fall back to dom.baseURI
