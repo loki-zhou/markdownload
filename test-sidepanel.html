@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试边栏功能 - MarkDownload</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .article {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>MarkDownload 边栏功能测试</h1>
+    
+    <div class="article">
+        <h2>功能说明</h2>
+        <p>这是一个测试页面，用于验证 MarkDownload 扩展的新边栏功能。</p>
+        
+        <h3>主要改进</h3>
+        <ul>
+            <li><span class="highlight">边栏显示</span>：扩展现在以边栏形式显示，而不是小弹窗</li>
+            <li><strong>更大空间</strong>：边栏提供更多空间来预览和编辑 Markdown 内容</li>
+            <li><strong>持久化</strong>：边栏不会因为点击其他地方而关闭</li>
+            <li><strong>更好体验</strong>：可以在浏览网页的同时查看转换结果</li>
+        </ul>
+        
+        <h3>使用方法</h3>
+        <ol>
+            <li>点击浏览器工具栏中的 MarkDownload 图标</li>
+            <li>边栏将在右侧打开</li>
+            <li>选择要转换的内容类型（选中文本或整个文档）</li>
+            <li>在边栏中预览 Markdown 结果</li>
+            <li>点击下载按钮保存文件</li>
+        </ol>
+        
+        <h3>技术实现</h3>
+        <p>使用了 Chrome 扩展的 <code>sidePanel</code> API，这是 Manifest V3 中的新功能。边栏具有以下特点：</p>
+        <ul>
+            <li>响应式设计，适配不同宽度</li>
+            <li>保持原有的所有功能</li>
+            <li>优化的用户界面布局</li>
+            <li>支持深色模式</li>
+        </ul>
+        
+        <blockquote>
+            <p>这段文字可以用来测试选中文本的转换功能。选中这段文字，然后在边栏中选择"选中文本"选项。</p>
+        </blockquote>
+    </div>
+    
+    <div class="article">
+        <h2>代码示例</h2>
+        <p>以下是一个简单的 JavaScript 代码示例：</p>
+        <pre><code>// 边栏打开处理
+chrome.action.onClicked.addListener(async (tab) => {
+  await chrome.sidePanel.open({ tabId: tab.id });
+});</code></pre>
+    </div>
+    
+    <footer>
+        <p><em>测试完成后，你可以尝试转换这个页面的内容为 Markdown 格式。</em></p>
+    </footer>
+</body>
+</html>

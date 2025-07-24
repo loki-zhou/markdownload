@@ -15,6 +15,12 @@ chrome.runtime.onMessage.addListener(notify);
 // create context menus
 createMenus()
 
+// 处理扩展图标点击，打开边栏
+chrome.action.onClicked.addListener(async (tab) => {
+  // 打开边栏
+  await chrome.sidePanel.open({ tabId: tab.id });
+});
+
 let creating; // A global promise to avoid concurrency issues
 async function setupOffscreenDocument(path, parameters) {
   // Check all windows controlled by the service worker to see if one 
