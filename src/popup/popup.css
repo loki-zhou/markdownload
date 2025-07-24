@@ -5,46 +5,47 @@
     --primary-light: #e0e7ff;
     --secondary: #64748b;
     --secondary-hover: #475569;
-    
+
     --success: #10b981;
     --warning: #f59e0b;
     --error: #ef4444;
-    
+
     --bg: #ffffff;
     --bg-secondary: #f8fafc;
     --bg-tertiary: #f1f5f9;
     --surface: #ffffff;
     --surface-hover: #f8fafc;
-    
+
     --text-primary: #0f172a;
     --text-secondary: #64748b;
     --text-tertiary: #94a3b8;
-    
+
     --border: #e2e8f0;
     --border-light: #f1f5f9;
     --border-focus: #6366f1;
-    
+
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    
-    --radius: 8px;
-    --radius-sm: 6px;
-    --radius-lg: 12px;
+
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
     --radius-full: 9999px;
-    
+
     --font-size: 14px;
     --font-size-sm: 12px;
     --font-size-lg: 16px;
-    
+
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing: 12px;
     --spacing-md: 16px;
     --spacing-lg: 20px;
     --spacing-xl: 24px;
-    
+
     --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -56,31 +57,31 @@
         --primary-light: #312e81;
         --secondary: #94a3b8;
         --secondary-hover: #cbd5e1;
-        
+
         --success: #34d399;
         --warning: #fbbf24;
         --error: #f87171;
-        
+
         --bg: #0f172a;
         --bg-secondary: #1e293b;
         --bg-tertiary: #334155;
         --surface: #1e293b;
         --surface-hover: #334155;
-        
+
         --text-primary: #f8fafc;
         --text-secondary: #cbd5e1;
         --text-tertiary: #94a3b8;
-        
+
         --border: #334155;
         --border-light: #475569;
         --border-focus: #818cf8;
-        
+
         --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
         --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
         --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
         --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
     }
-    
+
     .cm-s-xq-dark.CodeMirror {
         background-color: var(--surface);
         border: 1px solid var(--border);
@@ -130,6 +131,7 @@ body {
     font-size: var(--font-size);
     line-height: 1.5;
     overflow: hidden;
+    border-radius: var(--radius-lg);
 }
 
 /* 焦点样式 */
@@ -159,6 +161,7 @@ body {
     padding: var(--spacing-md) var(--spacing-md) var(--spacing);
     background: var(--surface);
     border-bottom: 1px solid var(--border-light);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .header-title {
@@ -180,9 +183,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius);
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-lg);
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     color: var(--text-secondary);
@@ -217,10 +220,10 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--spacing) var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     cursor: pointer;
     transition: var(--transition);
     user-select: none;
@@ -289,24 +292,24 @@ body {
     box-shadow: var(--shadow-sm);
 }
 
-.option-checkbox:checked + .option-content + .option-toggle {
+.option-checkbox:checked+.option-content+.option-toggle {
     background: var(--primary);
 }
 
-.option-checkbox:checked + .option-content + .option-toggle .toggle-slider {
+.option-checkbox:checked+.option-content+.option-toggle .toggle-slider {
     transform: translateX(20px);
 }
 
-.option-checkbox:checked + .option-content .option-icon {
+.option-checkbox:checked+.option-content .option-icon {
     color: var(--primary);
 }
 
 /* Radio 按钮样式 */
-.option-radio:checked + .option-content {
+.option-radio:checked+.option-content {
     color: var(--primary);
 }
 
-.option-radio:checked + .option-content .option-icon {
+.option-radio:checked+.option-content .option-icon {
     color: var(--primary);
 }
 
@@ -340,10 +343,10 @@ body {
 
 .title-input {
     width: 100%;
-    padding: var(--spacing) var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     font-size: var(--font-size);
     color: var(--text-primary);
     transition: var(--transition);
@@ -369,9 +372,6 @@ body {
 }
 
 .content-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     margin-bottom: var(--spacing-xs);
 }
 
@@ -381,43 +381,13 @@ body {
     color: var(--text-secondary);
 }
 
-.content-actions {
-    display: flex;
-    gap: var(--spacing-xs);
-}
-
-.action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.action-btn:hover {
-    background: var(--surface-hover);
-    color: var(--text-primary);
-    border-color: var(--border-focus);
-}
-
-.action-btn svg {
-    width: 14px;
-    height: 14px;
-}
-
 .content-textarea {
     flex: 1;
     width: 100%;
-    padding: var(--spacing);
+    padding: var(--spacing-md);
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     font-size: var(--font-size-sm);
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
     color: var(--text-primary);
@@ -440,7 +410,7 @@ body {
 
 .CodeMirror {
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     font-size: var(--font-size-sm);
     line-height: 1.6;
     height: 100%;
@@ -458,16 +428,17 @@ body {
 }
 
 .CodeMirror-lines {
-    padding: var(--spacing);
+    padding: var(--spacing-md);
 }
 
 /* 操作按钮区域 */
 .action-section {
-    padding: var(--spacing) var(--spacing-md) var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-md) var(--spacing-lg);
     display: flex;
     gap: var(--spacing-sm);
     border-top: 1px solid var(--border-light);
     background: var(--bg-secondary);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 
 .btn {
@@ -475,8 +446,8 @@ body {
     align-items: center;
     justify-content: center;
     gap: var(--spacing-xs);
-    padding: var(--spacing) var(--spacing-md);
-    border-radius: var(--radius);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-lg);
     font-size: var(--font-size);
     font-weight: 500;
     text-decoration: none;
@@ -484,7 +455,7 @@ body {
     transition: var(--transition);
     border: none;
     font-family: inherit;
-    min-height: 40px;
+    min-height: 44px;
 }
 
 .btn-primary {
@@ -606,6 +577,7 @@ body {
     0% {
         transform: rotate(0deg);
     }
+
     100% {
         transform: rotate(360deg);
     }
@@ -650,15 +622,24 @@ body {
 }
 
 @keyframes bounce {
-    0%, 20%, 53%, 80%, 100% {
+
+    0%,
+    20%,
+    53%,
+    80%,
+    100% {
         transform: translate3d(0, 0, 0);
     }
-    40%, 43% {
+
+    40%,
+    43% {
         transform: translate3d(0, -8px, 0);
     }
+
     70% {
         transform: translate3d(0, -4px, 0);
     }
+
     90% {
         transform: translate3d(0, -2px, 0);
     }
@@ -673,7 +654,7 @@ body {
 
 .progress-bar {
     width: 100%;
-    height: 6px;
+    height: 8px;
     background: var(--bg-tertiary);
     border-radius: var(--radius-full);
     overflow: hidden;
@@ -704,6 +685,7 @@ body {
     0% {
         transform: translateX(-100%);
     }
+
     100% {
         transform: translateX(100%);
     }

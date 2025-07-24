@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>国际化测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .language-switcher {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .language-switcher button {
+            margin: 0 10px;
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .language-switcher button.active {
+            background: #6366f1;
+            color: white;
+            border-color: #6366f1;
+        }
+        .demo-popup {
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 20px auto;
+            width: 380px;
+            height: 600px;
+        }
+        .info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .current-lang {
+            font-weight: bold;
+            color: #6366f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>MarkDownload 国际化测试</h1>
+        
+        <div class="info">
+            <p><strong>当前检测到的浏览器语言:</strong> <span class="current-lang" id="detectedLang"></span></p>
+            <p><strong>说明:</strong> 系统会自动检测浏览器语言，中文环境显示中文，其他语言显示英文。</p>
+        </div>
+
+        <div class="language-switcher">
+            <button onclick="testLanguage('en')" id="btn-en">English</button>
+            <button onclick="testLanguage('zh')" id="btn-zh">中文</button>
+            <button onclick="testLanguage('auto')" id="btn-auto" class="active">自动检测</button>
+        </div>
+
+        <div class="demo-popup">
+            <iframe src="src/popup/popup.html" style="width: 100%; height: 100%; border: none;"></iframe>
+        </div>
+
+        <div class="info">
+            <h3>测试功能:</h3>
+            <ul>
+                <li>自动检测浏览器语言 (navigator.language)</li>
+                <li>支持中文 (zh-*) 和英文 (默认)</li>
+                <li>所有界面文本都会根据语言自动切换</li>
+                <li>包括按钮文本、标签、占位符和提示信息</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 显示检测到的语言
+        const detectedLang = navigator.language || navigator.userLanguage;
+        document.getElementById('detectedLang').textContent = detectedLang;
+
+        function testLanguage(lang) {
+            // 更新按钮状态
+            document.querySelectorAll('.language-switcher button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`btn-${lang}`).classList.add('active');
+
+            // 这里可以添加语言切换逻辑
+            console.log('切换到语言:', lang);
+        }
+    </script>
+</body>
+</html>

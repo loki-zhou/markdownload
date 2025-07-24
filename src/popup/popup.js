@@ -4,39 +4,133 @@ var selectedText = null;
 var imageList = null;
 var mdClipsFolder = '';
 
+// 国际化系统
+const i18n = {
+    // 检测浏览器语言
+    detectLanguage() {
+        const lang = navigator.language || navigator.userLanguage;
+        // 支持中文（简体、繁体、香港、台湾等）
+        if (lang.startsWith('zh')) {
+            return 'zh';
+        }
+        // 默认英文
+        return 'en';
+    },
+
+    // 翻译文本库
+    translations: {
+        en: {
+            downloadImages: 'Download Images',
+            selectedText: 'Selected Text',
+            entireDocument: 'Entire Document',
+            includeTemplate: 'Include Template',
+            fileTitle: 'File Title',
+            titlePlaceholder: 'Enter file title...',
+            contentPreview: 'Content Preview',
+            downloadSelected: 'Download Selected',
+            downloadMarkdown: 'Download Markdown',
+            preparing: 'Preparing...',
+            // 进度消息
+            'dom-fetching': 'Fetching page content...',
+            'content-extraction': 'Extracting article content...',
+            'markdown-conversion': 'Converting to Markdown...',
+            'image-link-processing': 'Processing images and links...',
+            'finalizing': 'Preparing to display results...',
+            'processing-timeout': 'Processing is taking longer, please wait...'
+        },
+        zh: {
+            downloadImages: '下载图片',
+            selectedText: '选中文本',
+            entireDocument: '整个文档',
+            includeTemplate: '包含模板',
+            fileTitle: '文件标题',
+            titlePlaceholder: '输入文件标题...',
+            contentPreview: '内容预览',
+            downloadSelected: '下载选中内容',
+            downloadMarkdown: '下载 Markdown',
+            preparing: '准备中...',
+            // 进度消息
+            'dom-fetching': '正在获取页面内容...',
+            'content-extraction': '正在提取文章内容...',
+            'markdown-conversion': '正在转换为Markdown...',
+            'image-link-processing': '正在处理图片和链接...',
+            'finalizing': '正在准备显示结果...',
+            'processing-timeout': '处理时间较长，请耐心等待...'
+        }
+    },
+
+    // 当前语言
+    currentLang: 'en',
+
+    // 初始化
+    init() {
+        this.currentLang = this.detectLanguage();
+        this.applyTranslations();
+    },
+
+    // 获取翻译文本
+    t(key) {
+        return this.translations[this.currentLang][key] || this.translations.en[key] || key;
+    },
+
+    // 应用翻译到页面
+    applyTranslations() {
+        // 翻译带有 data-i18n 属性的元素
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            element.textContent = this.t(key);
+        });
+
+        // 翻译 placeholder 属性
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+            const key = element.getAttribute('data-i18n-placeholder');
+            element.placeholder = this.t(key);
+        });
+
+        // 翻译 title 属性
+        document.querySelectorAll('[data-i18n-title]').forEach(element => {
+            const key = element.getAttribute('data-i18n-title');
+            element.title = this.t(key);
+        });
+    }
+};
+
 /**
  * 进度指示器阶段配置
  * 
  * 定义了处理流程的各个阶段，每个阶段包含：
  * - range: 进度百分比范围 [最小值, 最大值]
- * - message: 显示给用户的描述文本
+ * - messageKey: 国际化消息的key
  */
 const progressStages = {
     "initializing": {
         range: [0, 5],
-        message: "准备中..."
+        messageKey: "preparing"
     },
     "dom-fetching": {
         range: [5, 20],
-        message: "正在获取页面内容..."
+        messageKey: "dom-fetching"
     },
     "content-extraction": {
         range: [20, 50],
-        message: "正在提取文章内容..."
+        messageKey: "content-extraction"
     },
     "markdown-conversion": {
         range: [50, 80],
-        message: "正在转换为Markdown..."
+        messageKey: "markdown-conversion"
     },
     "image-link-processing": {
         range: [80, 95],
-        message: "正在处理图片和链接..."
+        messageKey: "image-link-processing"
     },
     "finalizing": {
         range: [95, 100],
-        message: "正在准备显示结果..."
+        messageKey: "finalizing"
     }
 };
+
+// 初始化国际化系统
+i18n.init();
 
 const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
 // set up event handlers
@@ -89,15 +183,15 @@ const checkInitialSettings = options => {
 
 const toggleClipSelection = (options, isSelected) => {
     options.clipSelection = isSelected;
-    
+
     // 更新radio按钮状态
     document.querySelector("#selected").checked = isSelected;
     document.querySelector("#document").checked = !isSelected;
-    
+
     // 更新视觉状态
     document.querySelector("#selected").closest('.option-item').classList.toggle("checked", isSelected);
     document.querySelector("#document").closest('.option-item').classList.toggle("checked", !isSelected);
-    
+
     chrome.storage.sync.set(options).then(() => clipSite()).catch((error) => {
         console.error(error);
     });
@@ -105,11 +199,11 @@ const toggleClipSelection = (options, isSelected) => {
 
 const toggleIncludeTemplate = options => {
     options.includeTemplate = !options.includeTemplate;
-    
+
     // 更新checkbox状态
     document.querySelector("#includeTemplate").checked = options.includeTemplate;
     document.querySelector("#includeTemplate").closest('.option-item').classList.toggle("checked", options.includeTemplate);
-    
+
     chrome.storage.sync.set(options).then(() => {
         // 更新主菜单项
         chrome.contextMenus.update("toggle-includeTemplate", {
@@ -139,11 +233,11 @@ const toggleIncludeTemplate = options => {
 
 const toggleDownloadImages = options => {
     options.downloadImages = !options.downloadImages;
-    
+
     // 更新checkbox状态
     document.querySelector("#downloadImages").checked = options.downloadImages;
     document.querySelector("#downloadImages").closest('.option-item').classList.toggle("checked", options.downloadImages);
-    
+
     chrome.storage.sync.set(options).then(() => {
         // 更新主菜单项
         chrome.contextMenus.update("toggle-downloadImages", {
@@ -241,7 +335,7 @@ chrome.storage.sync.get(defaultOptions).then(options => {
             document.querySelector("#selected").click();
         }
     });
-    
+
     document.querySelector('label[for="document"]') || document.querySelector('#document').closest('label').addEventListener("click", (e) => {
         if (e.target.type !== 'radio') {
             e.preventDefault();
@@ -255,7 +349,7 @@ chrome.storage.sync.get(defaultOptions).then(options => {
             toggleClipSelection(options, true);
         }
     });
-    
+
     document.getElementById("document").addEventListener("change", (e) => {
         if (e.target.checked) {
             toggleClipSelection(options, false);
@@ -266,7 +360,7 @@ chrome.storage.sync.get(defaultOptions).then(options => {
     document.getElementById("includeTemplate").addEventListener("change", (e) => {
         toggleIncludeTemplate(options);
     });
-    
+
     document.getElementById("downloadImages").addEventListener("change", (e) => {
         toggleDownloadImages(options);
     });
@@ -280,7 +374,7 @@ chrome.storage.sync.get(defaultOptions).then(options => {
             checkbox.dispatchEvent(new Event('change'));
         }
     });
-    
+
     document.querySelector('#downloadImages').closest('label').addEventListener("click", (e) => {
         if (e.target.type !== 'checkbox') {
             e.preventDefault();
@@ -409,9 +503,18 @@ function updateProgress(stage, percentage, message) {
         const actualPercentage = percentage !== undefined ?
             percentage : (stageConfig ? stageConfig.range[0] : 0);
 
+        // 获取国际化消息
+        let displayMessage = message;
+        if (!displayMessage && stageConfig) {
+            displayMessage = i18n.t(stageConfig.messageKey);
+        }
+        if (!displayMessage) {
+            displayMessage = i18n.t('preparing');
+        }
+
         // 更新UI元素
         progressFill.style.width = `${actualPercentage}%`;
-        progressText.textContent = message || (stageConfig ? stageConfig.message : "处理中...");
+        progressText.textContent = displayMessage;
         progressPercentage.textContent = `${Math.round(actualPercentage)}%`;
 
         // 清除之前的超时计时器
@@ -425,7 +528,7 @@ function updateProgress(stage, percentage, message) {
         // 设置新的超时计时器，如果10秒内没有更新，显示提示信息
         progressTimeout = setTimeout(() => {
             if (Date.now() - lastProgressUpdate > 10000) {
-                progressText.textContent = "处理时间较长，请耐心等待...";
+                progressText.textContent = i18n.t('processing-timeout');
             }
         }, 10000);
     }
