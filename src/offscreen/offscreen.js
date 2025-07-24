@@ -301,63 +301,84 @@ async function getArticleFromDom(domString, originalUrl = null) {
   })(dom);
   // console.log('before Readability (dom.baseURI):', dom.baseURI);
 
-function preprocessChatGPTPage(dom) {
-  // Create a new, clean document
-  const newDoc = document.implementation.createHTMLDocument(dom.title);
+  function preprocessChatGPTPage(dom) {
+    // Create a new, clean document
+    const newDoc = document.implementation.createHTMLDocument(dom.title);
 
-  // Find all conversation turn elements
-  const turnElements = dom.querySelectorAll('[data-testid^="conversation-turn-"]');
+    // Find all conversation turn elements
+    const turnElements = dom.querySelectorAll('[data-testid^="conversation-turn-"]');
 
-  if (turnElements.length === 0) {
-    console.warn("No conversation turns found. Readability will not find any content.");
-    return dom;
+    if (turnElements.length === 0) {
+      console.warn("No conversation turns found. Readability will not find any content.");
+      return dom;
+    }
+
+    // Create main container for Readability
+    const articleContainer = newDoc.createElement('div');
+    articleContainer.id = 'readability-content';
+
+    // Clone and append all turn elements directly
+    turnElements.forEach(turnElement => {
+      const clonedTurn = turnElement.cloneNode(true);
+      articleContainer.appendChild(clonedTurn);
+    });
+
+    // Replace body with curated content
+    newDoc.body.innerHTML = '';
+    newDoc.body.appendChild(articleContainer);
+    console.log("Created a simplified DOM with conversation turns for Readability.");
+    return newDoc;
   }
+  
+  
+function preprocessGrokPage(dom) {
+    // Create a new, clean document
+    const newDoc = document.implementation.createHTMLDocument(dom.title);
 
-  // Create main container for Readability
-  const articleContainer = newDoc.createElement('div');
-  articleContainer.id = 'readability-content';
+    // Find all conversation turn elements
+    const turnElements = dom.querySelectorAll('.relative:nth-child(n)' );
 
-  // Clone and append all turn elements directly
-  turnElements.forEach(turnElement => {
-    const clonedTurn = turnElement.cloneNode(true);
-    articleContainer.appendChild(clonedTurn);
-  });
+    if (turnElements.length === 0) {
+      console.warn("No conversation turns found. Readability will not find any content.");
+      return dom;
+    }
 
-  // Replace body with curated content
-  newDoc.body.innerHTML = '';
-  newDoc.body.appendChild(articleContainer);
-  console.log("Created a simplified DOM with conversation turns for Readability.");
-  return newDoc;
+    // Create main container for Readability
+    const articleContainer = newDoc.createElement('div');
+    articleContainer.id = 'readability-content';
+
+    // Clone and append all turn elements directly
+    turnElements.forEach(turnElement => {
+      console.log("turnElement = ", turnElement.outerHTML);
+      const clonedTurn = turnElement.cloneNode(true);
+      articleContainer.appendChild(clonedTurn);
+    });
+
+    // Replace body with curated content
+    newDoc.body.innerHTML = '';
+    newDoc.body.appendChild(articleContainer);
+    console.log("Created a simplified DOM with conversation turns for Readability.");
+    return newDoc;
 }
-  
-  // --- Your main execution logic ---
-  
-  // Assume 'dom' is the original document object
-  const isChatGPTPage = dom.title && (
-    dom.title.includes("Readability library usage") ||
-    (dom.baseURI && dom.baseURI.includes("chatgpt.com"))
-  );
-  
-  // const isArxivPage = dom.baseURI && dom.baseURI.includes("arxiv.org");
-  // We'll work on a clone to avoid changing the live page
-  let docToParse = dom.cloneNode(true);
-  
-  if (isChatGPTPage) {
-    // Special handling for arXiv to ensure correct image path resolution
-    // Now, process the page to extract the full conversation
-    docToParse = preprocessChatGPTPage(docToParse);
-  }
-// if (isArxivPage) {
-//   if (docToParse.baseURI && !docToParse.baseURI.endsWith('/')) {
-//     console.log("Fixing arXiv baseURI...");
-//     let baseEl = docToParse.querySelector('base');
-//     if (!baseEl) {
-//       baseEl = docToParse.createElement('base');
-//       docToParse.head.prepend(baseEl);
-//     }
-//     baseEl.setAttribute('href', docToParse.baseURI + '/');
-//   }
-// }
+
+
+// --- MAIN LOGIC ---
+
+
+// We'll work on a clone to avoid changing the live page
+let docToParse = dom.cloneNode(true);
+
+// Check which site we are on
+const isChatGPTPage = docToParse.baseURI && docToParse.baseURI.includes("chatgpt.com");
+const isGrokPage = docToParse.baseURI && docToParse.baseURI.includes("grok.com");
+
+if (isChatGPTPage) {
+  console.log("ChatGPT page detected. Preprocessing...");
+  docToParse = preprocessChatGPTPage(docToParse);
+} else if (isGrokPage) {
+  console.log("Grok page detected. Preprocessing...");
+  docToParse = preprocessGrokPage(docToParse);
+}
   
   // Pass the final, clean document to Readability
   // console.log('Final HTML being passed to Readability:', docToParse.documentElement.outerHTML);
