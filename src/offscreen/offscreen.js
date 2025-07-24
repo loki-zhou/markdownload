@@ -374,24 +374,26 @@ async function getArticleFromDom(domString, originalUrl = null) {
     (dom.baseURI && dom.baseURI.includes("chatgpt.com"))
   );
   
+  const isArxivPage = dom.baseURI && dom.baseURI.includes("arxiv.org");
   // We'll work on a clone to avoid changing the live page
   let docToParse = dom.cloneNode(true);
   
   if (isChatGPTPage) {
     // Special handling for arXiv to ensure correct image path resolution
-    if (docToParse.baseURI && docToParse.baseURI.includes("arxiv.org") && !docToParse.baseURI.endsWith('/')) {
-        console.log("Fixing arXiv baseURI...");
-        let baseEl = docToParse.querySelector('base');
-        if (!baseEl) {
-            baseEl = docToParse.createElement('base');
-            docToParse.head.prepend(baseEl);
-        }
-        baseEl.setAttribute('href', docToParse.baseURI + '/');
-    }
-  
     // Now, process the page to extract the full conversation
     docToParse = preprocessChatGPTPage(docToParse);
   }
+if (isArxivPage) {
+  if (docToParse.baseURI && !docToParse.baseURI.endsWith('/')) {
+    console.log("Fixing arXiv baseURI...");
+    let baseEl = docToParse.querySelector('base');
+    if (!baseEl) {
+      baseEl = docToParse.createElement('base');
+      docToParse.head.prepend(baseEl);
+    }
+    baseEl.setAttribute('href', docToParse.baseURI + '/');
+  }
+}
   
   // Pass the final, clean document to Readability
   // console.log('Final HTML being passed to Readability:', docToParse.documentElement.outerHTML);
