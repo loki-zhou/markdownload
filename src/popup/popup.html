@@ -12,26 +12,151 @@
 
 <body>
   <div id="container">
-    
-    <a href="#" class="button toggle" id="downloadImages"><i class="check"></i>Download Images</a>
-    <div class="row" id="clipOption">
-      <a href="#" class="button toggle" id="selected"><i class="check"></i>Selected Text</a>
-      <a href="#" class="button toggle" id="document"><i class="check"></i>Entire Document</a>
+    <!-- Header -->
+    <div class="header">
+      <div class="header-title">
+        <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10,9 9,9 8,9"/>
+        </svg>
+        <span>MarkDownload</span>
+      </div>
+      <a href="#" id="options" class="options-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+        </svg>
+      </a>
     </div>
-    <a href="#" class="button toggle" id="includeTemplate"><i class="check"></i>Include front/back template</a>
-    <input type="text" id="title"></input>
-    <textarea id="md"></textarea>
-    <a href="#" class="button" id="download">Download</a>
-    <a href="#" class="button" id="downloadSelection">Download selected</a>
+
+    <!-- Options Section -->
+    <div class="options-section">
+      <div class="option-group">
+        <label class="option-item">
+          <input type="checkbox" id="downloadImages" class="option-checkbox">
+          <div class="option-content">
+            <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21,15 16,10 5,21"/>
+            </svg>
+            <span class="option-text">下载图片</span>
+          </div>
+          <div class="option-toggle">
+            <div class="toggle-slider"></div>
+          </div>
+        </label>
+
+        <div class="option-row" id="clipOption">
+          <label class="option-item half">
+            <input type="radio" name="clipType" id="selected" class="option-radio">
+            <div class="option-content">
+              <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 9h6v6h-6z"/>
+                <path d="M21 15V9a2 2 0 0 0-2-2H9"/>
+                <path d="M3 9v6a2 2 0 0 0 2 2h6"/>
+              </svg>
+              <span class="option-text">选中文本</span>
+            </div>
+          </label>
+          <label class="option-item half">
+            <input type="radio" name="clipType" id="document" class="option-radio">
+            <div class="option-content">
+              <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+              </svg>
+              <span class="option-text">整个文档</span>
+            </div>
+          </label>
+        </div>
+
+        <label class="option-item">
+          <input type="checkbox" id="includeTemplate" class="option-checkbox">
+          <div class="option-content">
+            <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            <span class="option-text">包含模板</span>
+          </div>
+          <div class="option-toggle">
+            <div class="toggle-slider"></div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Title Input -->
+    <div class="input-section">
+      <div class="input-group">
+        <label class="input-label">文件标题</label>
+        <input type="text" id="title" class="title-input" placeholder="输入文件标题...">
+      </div>
+    </div>
+
+    <!-- Content Preview -->
+    <div class="content-section">
+      <div class="content-header">
+        <span class="content-label">内容预览</span>
+        <div class="content-actions">
+          <button class="action-btn" title="格式化">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="4 7 4 4 20 4 20 7"/>
+              <line x1="9" y1="20" x2="15" y2="20"/>
+              <line x1="12" y1="4" x2="12" y2="20"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="codemirror-container">
+        <textarea id="md" class="content-textarea"></textarea>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-section">
+      <button class="btn btn-secondary" id="downloadSelection">下载选中内容</button>
+      <button class="btn btn-primary" id="download">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7,10 12,15 17,10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>下载 Markdown</span>
+      </button>
+    </div>
   </div>
-  <div id="spinner"></div>
-  
-  <div id="progress-container">
-    <div class="progress-text">准备中...</div>
-    <div class="progress-bar">
-      <div class="progress-fill"></div>
+
+  <!-- Loading States -->
+  <div id="spinner" class="loading-overlay">
+    <div class="loading-spinner">
+      <div class="spinner-ring"></div>
+      <div class="spinner-ring"></div>
+      <div class="spinner-ring"></div>
     </div>
-    <div class="progress-percentage">0%</div>
+  </div>
+  
+  <div id="progress-container" class="progress-overlay">
+    <div class="progress-content">
+      <div class="progress-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7,10 12,15 17,10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </div>
+      <div class="progress-text">准备中...</div>
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+      <div class="progress-percentage">0%</div>
+    </div>
   </div>
 
   <script type="application/javascript" src="lib/codemirror.js"></script>

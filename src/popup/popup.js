@@ -50,10 +50,12 @@ cm.on("cursorActivity", (cm) => {
     var a = document.getElementById("downloadSelection");
 
     if (somethingSelected) {
-        if (a.style.display != "block") a.style.display = "block";
+        a.classList.add("show");
+        a.style.display = "flex";
     }
     else {
-        if (a.style.display != "none") a.style.display = "none";
+        a.classList.remove("show");
+        a.style.display = "none";
     }
 });
 document.getElementById("download").addEventListener("click", download);
@@ -66,22 +68,36 @@ const defaultOptions = {
 }
 
 const checkInitialSettings = options => {
-    if (options.includeTemplate)
-        document.querySelector("#includeTemplate").classList.add("checked");
+    if (options.includeTemplate) {
+        document.querySelector("#includeTemplate").checked = true;
+        document.querySelector("#includeTemplate").closest('.option-item').classList.add("checked");
+    }
 
-    if (options.downloadImages)
-        document.querySelector("#downloadImages").classList.add("checked");
+    if (options.downloadImages) {
+        document.querySelector("#downloadImages").checked = true;
+        document.querySelector("#downloadImages").closest('.option-item').classList.add("checked");
+    }
 
-    if (options.clipSelection)
-        document.querySelector("#selected").classList.add("checked");
-    else
-        document.querySelector("#document").classList.add("checked");
+    if (options.clipSelection) {
+        document.querySelector("#selected").checked = true;
+        document.querySelector("#selected").closest('.option-item').classList.add("checked");
+    } else {
+        document.querySelector("#document").checked = true;
+        document.querySelector("#document").closest('.option-item').classList.add("checked");
+    }
 }
 
-const toggleClipSelection = options => {
-    options.clipSelection = !options.clipSelection;
-    document.querySelector("#selected").classList.toggle("checked");
-    document.querySelector("#document").classList.toggle("checked");
+const toggleClipSelection = (options, isSelected) => {
+    options.clipSelection = isSelected;
+    
+    // 更新radio按钮状态
+    document.querySelector("#selected").checked = isSelected;
+    document.querySelector("#document").checked = !isSelected;
+    
+    // 更新视觉状态
+    document.querySelector("#selected").closest('.option-item').classList.toggle("checked", isSelected);
+    document.querySelector("#document").closest('.option-item').classList.toggle("checked", !isSelected);
+    
     chrome.storage.sync.set(options).then(() => clipSite()).catch((error) => {
         console.error(error);
     });
@@ -89,7 +105,11 @@ const toggleClipSelection = options => {
 
 const toggleIncludeTemplate = options => {
     options.includeTemplate = !options.includeTemplate;
-    document.querySelector("#includeTemplate").classList.toggle("checked");
+    
+    // 更新checkbox状态
+    document.querySelector("#includeTemplate").checked = options.includeTemplate;
+    document.querySelector("#includeTemplate").closest('.option-item').classList.toggle("checked", options.includeTemplate);
+    
     chrome.storage.sync.set(options).then(() => {
         // 更新主菜单项
         chrome.contextMenus.update("toggle-includeTemplate", {
@@ -119,7 +139,11 @@ const toggleIncludeTemplate = options => {
 
 const toggleDownloadImages = options => {
     options.downloadImages = !options.downloadImages;
-    document.querySelector("#downloadImages").classList.toggle("checked");
+    
+    // 更新checkbox状态
+    document.querySelector("#downloadImages").checked = options.downloadImages;
+    document.querySelector("#downloadImages").closest('.option-item').classList.toggle("checked", options.downloadImages);
+    
     chrome.storage.sync.set(options).then(() => {
         // 更新主菜单项
         chrome.contextMenus.update("toggle-downloadImages", {
@@ -146,11 +170,14 @@ const toggleDownloadImages = options => {
     });
 }
 const showOrHideClipOption = selection => {
+    const clipOption = document.getElementById("clipOption");
     if (selection) {
-        document.getElementById("clipOption").style.display = "flex";
+        clipOption.classList.add("show");
+        clipOption.style.display = "flex";
     }
     else {
-        document.getElementById("clipOption").style.display = "none";
+        clipOption.classList.remove("show");
+        clipOption.style.display = "none";
     }
 }
 
@@ -207,21 +234,60 @@ const clipSite = () => {
 chrome.storage.sync.get(defaultOptions).then(options => {
     checkInitialSettings(options);
 
-    document.getElementById("selected").addEventListener("click", (e) => {
-        e.preventDefault();
-        toggleClipSelection(options);
+    // 为选项项添加点击事件处理
+    document.querySelector('label[for="selected"]') || document.querySelector('#selected').closest('label').addEventListener("click", (e) => {
+        if (e.target.type !== 'radio') {
+            e.preventDefault();
+            document.querySelector("#selected").click();
+        }
     });
-    document.getElementById("document").addEventListener("click", (e) => {
-        e.preventDefault();
-        toggleClipSelection(options);
+    
+    document.querySelector('label[for="document"]') || document.querySelector('#document').closest('label').addEventListener("click", (e) => {
+        if (e.target.type !== 'radio') {
+            e.preventDefault();
+            document.querySelector("#document").click();
+        }
     });
-    document.getElementById("includeTemplate").addEventListener("click", (e) => {
-        e.preventDefault();
+
+    // Radio按钮事件处理
+    document.getElementById("selected").addEventListener("change", (e) => {
+        if (e.target.checked) {
+            toggleClipSelection(options, true);
+        }
+    });
+    
+    document.getElementById("document").addEventListener("change", (e) => {
+        if (e.target.checked) {
+            toggleClipSelection(options, false);
+        }
+    });
+
+    // Checkbox事件处理
+    document.getElementById("includeTemplate").addEventListener("change", (e) => {
         toggleIncludeTemplate(options);
     });
-    document.getElementById("downloadImages").addEventListener("click", (e) => {
-        e.preventDefault();
+    
+    document.getElementById("downloadImages").addEventListener("change", (e) => {
         toggleDownloadImages(options);
+    });
+
+    // 为label添加点击事件以触发checkbox
+    document.querySelector('#includeTemplate').closest('label').addEventListener("click", (e) => {
+        if (e.target.type !== 'checkbox') {
+            e.preventDefault();
+            const checkbox = document.querySelector("#includeTemplate");
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
+        }
+    });
+    
+    document.querySelector('#downloadImages').closest('label').addEventListener("click", (e) => {
+        if (e.target.type !== 'checkbox') {
+            e.preventDefault();
+            const checkbox = document.querySelector("#downloadImages");
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
+        }
     });
 
     return chrome.tabs.query({

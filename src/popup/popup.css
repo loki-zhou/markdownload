@@ -1,52 +1,120 @@
 :root {
-    --focus: orange;
-    --bg: #fff;/*#0A001F;*/
-    --fg: #000;
-    --border: #eee;
-    --primary: #4A90E2;
-    --fg-primary: #eee;
-    --bg-primary: #ECF5FF;
-    --border-primary: #4A90E2;
+    /* 现代配色方案 */
+    --primary: #6366f1;
+    --primary-hover: #5855eb;
+    --primary-light: #e0e7ff;
+    --secondary: #64748b;
+    --secondary-hover: #475569;
+    
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    
+    --bg: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --surface: #ffffff;
+    --surface-hover: #f8fafc;
+    
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --text-tertiary: #94a3b8;
+    
+    --border: #e2e8f0;
+    --border-light: #f1f5f9;
+    --border-focus: #6366f1;
+    
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    
+    --radius: 8px;
+    --radius-sm: 6px;
+    --radius-lg: 12px;
+    --radius-full: 9999px;
+    
     --font-size: 14px;
+    --font-size-sm: 12px;
+    --font-size-lg: 16px;
+    
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing: 12px;
+    --spacing-md: 16px;
+    --spacing-lg: 20px;
+    --spacing-xl: 24px;
+    
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @media(prefers-color-scheme: dark) {
     :root {
-        --focus: orange;
-        --bg: #2A2A2E;
-        --fg: #f8f8f8;
-        --border: #555;
-        --primary: #4A90E2;
-        --fg-primary: #eee;
-        --bg-primary: hsl(212, 80%, 30%);
-        --border-primary: #4A90E2;
-        --pre-bg: #474749;
+        --primary: #818cf8;
+        --primary-hover: #6366f1;
+        --primary-light: #312e81;
+        --secondary: #94a3b8;
+        --secondary-hover: #cbd5e1;
+        
+        --success: #34d399;
+        --warning: #fbbf24;
+        --error: #f87171;
+        
+        --bg: #0f172a;
+        --bg-secondary: #1e293b;
+        --bg-tertiary: #334155;
+        --surface: #1e293b;
+        --surface-hover: #334155;
+        
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-tertiary: #94a3b8;
+        
+        --border: #334155;
+        --border-light: #475569;
+        --border-focus: #818cf8;
+        
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
     }
+    
     .cm-s-xq-dark.CodeMirror {
-        background-color: var(--bg);
+        background-color: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
     }
 }
 
-/* Works on Firefox */
+/* 现代滚动条样式 */
 * {
     scrollbar-width: thin;
-    scrollbar-color: var(--pre-bg) var(--bg);
+    scrollbar-color: var(--text-tertiary) transparent;
 }
 
-/* Works on Chrome, Edge, and Safari */
 *::-webkit-scrollbar {
-    width: 12px;
+    width: 6px;
+    height: 6px;
 }
 
 *::-webkit-scrollbar-track {
-    background: var(--bg);
+    background: transparent;
 }
 
 *::-webkit-scrollbar-thumb {
-    background-color: var(--border);
-    border-radius: 20px;
+    background-color: var(--text-tertiary);
+    border-radius: var(--radius-full);
+    border: 2px solid transparent;
+    background-clip: content-box;
 }
 
+*::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-secondary);
+}
+
+/* 基础重置和布局 */
 * {
     margin: 0;
     padding: 0;
@@ -54,209 +122,596 @@
 }
 
 body {
-    width: 350px;
-    height: 500px;
-    border-radius: 0.5em;
-    overflow: hidden;
-    font-family: sans-serif;
+    width: 380px;
+    height: 600px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
     background: var(--bg);
+    color: var(--text-primary);
     font-size: var(--font-size);
-}
-
-@keyframes spinner {
-    to {
-        transform: rotate(360deg);
-    }
-}
-* {
-    box-sizing: border-box;
-}
-
-*:focus {
-    border: 3px dotted var(--focus-color) !important;
-}
-
-#spinner:before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin-top: -10px;
-    margin-left: -10px;
-    border-radius: 50%;
-    border-top: 2px solid var(--primary);
-    border-right: 2px solid transparent;
-    animation: spinner .6s linear infinite;
-}
-
-/* 进度指示器样式 */
-#progress-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    background-color: var(--bg);
-    z-index: 10;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 8px;
-    background-color: #f0f0f0;
-    border-radius: 4px;
+    line-height: 1.5;
     overflow: hidden;
-    margin: 10px 0;
 }
 
-.progress-fill {
-    height: 100%;
-    background-color: var(--primary);
-    width: 0%;
-    transition: width 0.3s ease;
+/* 焦点样式 */
+*:focus {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
 }
 
-.progress-text {
-    font-size: 14px;
-    margin-bottom: 5px;
-    color: var(--fg);
-    text-align: center;
-    width: 100%;
+*:focus:not(:focus-visible) {
+    outline: none;
 }
 
-.progress-percentage {
-    font-size: 12px;
-    text-align: right;
-    color: var(--fg);
-    opacity: 0.7;
-    width: 100%;
-}
-
-/* 深色模式适配 */
-@media(prefers-color-scheme: dark) {
-    .progress-bar {
-        background-color: #333;
-    }
-}
-
-.CodeMirror {
-    border: none;
-    padding: 0.5em;
-    flex: 1;
-}
-
-input#title {
-    padding: 0.5em;
-    color: var(--fg);
-    background-color: var(--bg);
-    border: 1px solid var(--border);
-    font-size: 1.01em;
-}
-
+/* 主容器 */
 #container {
     width: 100%;
     height: 100%;
     display: none;
     flex-direction: column;
-}
-.row {
-    flex-direction: row;
-    display:flex;
+    background: var(--bg);
 }
 
-a.button {
-    display: block;
-    padding: 0.5em 0;
-    background-color: var(--primary);
-    color: var(--fg-primary);
-    text-align: center;
+/* Header 样式 */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md) var(--spacing-md) var(--spacing);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-weight: 600;
+    font-size: var(--font-size-lg);
+    color: var(--text-primary);
+}
+
+.header-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--primary);
+}
+
+.options-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
     text-decoration: none;
-    line-height: 1em;
-    border: 1px solid var(--bg);
-    border-collapse: collapse;
+    transition: var(--transition);
 }
 
-#options {
-    display: block;
-    position: absolute;
-    top:2px;
-    right:2px;
-    font-size: 0;
-    text-decoration: none;
-    background-color: var(--primary);
-    color: var(--fg-primary);
-    border-radius: 2rem;
-    width: 2rem;
-    height: 2rem;
-    text-align: center;
-    line-height: 2rem;
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
-}
-#options::before {
-    content: '⚙';
-    font-size: 1rem;
+.options-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
 }
 
-#downloadSelection {
-    background-color: var(--bg-primary);
+.options-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* 选项区域样式 */
+.options-section {
+    padding: 0 var(--spacing-md) var(--spacing);
+}
+
+.option-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.option-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing) var(--spacing-md);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: var(--transition);
+    user-select: none;
+}
+
+.option-item:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-focus);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.option-item.half {
+    flex: 1;
+}
+
+.option-row {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.option-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex: 1;
+}
+
+.option-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--text-secondary);
+    transition: var(--transition);
+}
+
+.option-text {
+    font-size: var(--font-size);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.option-checkbox,
+.option-radio {
     display: none;
 }
 
-#selected, #document {
-    flex:1;
+/* Toggle 开关样式 */
+.option-toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    transition: var(--transition);
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: var(--radius-full);
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.option-checkbox:checked + .option-content + .option-toggle {
+    background: var(--primary);
+}
+
+.option-checkbox:checked + .option-content + .option-toggle .toggle-slider {
+    transform: translateX(20px);
+}
+
+.option-checkbox:checked + .option-content .option-icon {
+    color: var(--primary);
+}
+
+/* Radio 按钮样式 */
+.option-radio:checked + .option-content {
+    color: var(--primary);
+}
+
+.option-radio:checked + .option-content .option-icon {
+    color: var(--primary);
+}
+
+.option-item:has(.option-radio:checked) {
+    background: var(--primary-light);
+    border-color: var(--primary);
+}
+
+.option-item:has(.option-checkbox:checked) {
+    background: var(--primary-light);
+    border-color: var(--primary);
+}
+
+/* 输入区域样式 */
+.input-section {
+    padding: 0 var(--spacing-md) var(--spacing);
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.input-label {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-left: var(--spacing-xs);
+}
+
+.title-input {
+    width: 100%;
+    padding: var(--spacing) var(--spacing-md);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: var(--font-size);
+    color: var(--text-primary);
+    transition: var(--transition);
+    font-family: inherit;
+}
+
+.title-input:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.title-input::placeholder {
+    color: var(--text-tertiary);
+}
+
+/* 内容区域样式 */
+.content-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0 var(--spacing-md) var(--spacing);
+    min-height: 0;
+}
+
+.content-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xs);
+}
+
+.content-label {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.content-actions {
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.action-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+    border-color: var(--border-focus);
+}
+
+.action-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.content-textarea {
+    flex: 1;
+    width: 100%;
+    padding: var(--spacing);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: var(--font-size-sm);
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    color: var(--text-primary);
+    resize: none;
+    transition: var(--transition);
+    line-height: 1.6;
+}
+
+.content-textarea:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.codemirror-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.CodeMirror {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+    height: 100%;
+    flex: 1;
+    background: var(--surface);
+}
+
+.CodeMirror-focused {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.CodeMirror-scroll {
+    min-height: 120px;
+}
+
+.CodeMirror-lines {
+    padding: var(--spacing);
+}
+
+/* 操作按钮区域 */
+.action-section {
+    padding: var(--spacing) var(--spacing-md) var(--spacing-md);
+    display: flex;
+    gap: var(--spacing-sm);
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+}
+
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing) var(--spacing-md);
+    border-radius: var(--radius);
+    font-size: var(--font-size);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+    border: none;
+    font-family: inherit;
+    min-height: 40px;
+}
+
+.btn-primary {
+    flex: 1;
+    background: var(--primary);
+    color: white;
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary {
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    display: none;
+}
+
+.btn-secondary:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-focus);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* 显示/隐藏控制 */
+#downloadSelection {
+    display: none;
+}
+
+#downloadSelection.show {
+    display: flex;
 }
 
 #clipOption {
-    display:none;
+    display: none;
+}
+
+#clipOption.show {
+    display: flex;
 }
 
 
 
-.button.toggle {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    position: relative;
-    color:var(--fg);
-    cursor: pointer;
-    padding: 10px 10px 10px 30px;
-    display: inline-block;
-    font-weight: 600;
-    transition: .3s ease all;
-}
-
-.button.toggle:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-}
-
-.button.toggle.checked {
-    background: var(--bg-primary);
-    border-color: var(--border-primary);
-}
-
-.check {
-    background: var(--bg-primary);
-    border-radius: 50%;
-    content:'';
-    height: 20px;
-    left: 10px;
+/* 加载状态样式 */
+.loading-overlay {
     position: absolute;
-    top: calc(50% - 10px);
-    transition: .3s ease background-color;
-    width: 20px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
 }
 
-.checked .check {
-    background-color: var(--primary);
-    background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIHdpZHRoPSIyNiIgaGVpZ2h0PSIyMCIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIyLjAyOTY4IC00MC4wOTAzIDI2IDIwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIj48IS0tR2VuZXJhdGVkIGJ5IElKU1ZHIChodHRwczovL2dpdGh1Yi5jb20vaWNvbmphci9JSlNWRyktLT48cGF0aCBkPSJNMjcuOTc0MywtMzYuMTI3MmMwLDAuNDQ2NDI4IC0wLjE1NjI1LDAuODI1ODkzIC0wLjQ2ODc1LDEuMTM4MzlsLTEyLjEyMDUsMTIuMTIwNWwtMi4yNzY3OSwyLjI3Njc5Yy0wLjMxMjUsMC4zMTI1IC0wLjY5MTk2NCwwLjQ2ODc1IC0xLjEzODM5LDAuNDY4NzVjLTAuNDQ2NDI4LDAgLTAuODI1ODkzLC0wLjE1NjI1IC0xLjEzODM5LC0wLjQ2ODc1bC0yLjI3Njc5LC0yLjI3Njc5bC02LjA2MDI3LC02LjA2MDI3Yy0wLjMxMjUsLTAuMzEyNSAtMC40Njg3NSwtMC42OTE5NjUgLTAuNDY4NzUsLTEuMTM4MzljMCwtMC40NDY0MjkgMC4xNTYyNSwtMC44MjU4OTMgMC40Njg3NSwtMS4xMzgzOWwyLjI3Njc5LC0yLjI3Njc5YzAuMzEyNSwtMC4zMTI1IDAuNjkxOTY1LC0wLjQ2ODc1IDEuMTM4MzksLTAuNDY4NzVjMC40NDY0MjksMCAwLjgyNTg5MywwLjE1NjI1IDEuMTM4MzksMC40Njg3NWw0LjkyMTg4LDQuOTM4NjJsMTAuOTgyMSwtMTAuOTk4OWMwLjMxMjUsLTAuMzEyNSAwLjY5MTk2NCwtMC40Njg3NSAxLjEzODM5LC0wLjQ2ODc1YzAuNDQ2NDI4LDAgMC44MjU4OTMsMC4xNTYyNSAxLjEzODM5LDAuNDY4NzVsMi4yNzY3OCwyLjI3Njc5YzAuMzEyNSwwLjMxMjUgMC40Njg3NSwwLjY5MTk2NCAwLjQ2ODc1LDEuMTM4MzlaIiB0cmFuc2Zvcm09InNjYWxlKDEuMDAxOTgpIiBmaWxsPSIjZmZmIj48L3BhdGg+PC9zdmc+');
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 12px;
+@media(prefers-color-scheme: dark) {
+    .loading-overlay {
+        background: rgba(15, 23, 42, 0.95);
+    }
+}
+
+.loading-spinner {
+    position: relative;
+    width: 60px;
+    height: 60px;
+}
+
+.spinner-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 3px solid transparent;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+.spinner-ring:nth-child(1) {
+    animation-delay: -0.45s;
+}
+
+.spinner-ring:nth-child(2) {
+    animation-delay: -0.3s;
+    width: 80%;
+    height: 80%;
+    top: 10%;
+    left: 10%;
+    border-top-color: var(--secondary);
+}
+
+.spinner-ring:nth-child(3) {
+    animation-delay: -0.15s;
+    width: 60%;
+    height: 60%;
+    top: 20%;
+    left: 20%;
+    border-top-color: var(--success);
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* 进度指示器样式 */
+.progress-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+@media(prefers-color-scheme: dark) {
+    .progress-overlay {
+        background: rgba(15, 23, 42, 0.98);
+    }
+}
+
+.progress-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-xl);
+    max-width: 280px;
+    width: 100%;
+}
+
+.progress-icon {
+    width: 48px;
+    height: 48px;
+    color: var(--primary);
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 53%, 80%, 100% {
+        transform: translate3d(0, 0, 0);
+    }
+    40%, 43% {
+        transform: translate3d(0, -8px, 0);
+    }
+    70% {
+        transform: translate3d(0, -4px, 0);
+    }
+    90% {
+        transform: translate3d(0, -2px, 0);
+    }
+}
+
+.progress-text {
+    font-size: var(--font-size);
+    font-weight: 500;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+    width: 0%;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: var(--radius-full);
+    position: relative;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.progress-percentage {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-align: center;
 }
