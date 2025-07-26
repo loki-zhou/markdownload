@@ -302,31 +302,67 @@ async function getArticleFromDom(domString, originalUrl = null) {
   // console.log('before Readability (dom.baseURI):', dom.baseURI);
 
   function preprocessChatGPTPage(dom) {
-    // Create a new, clean document
+    // 1. Create a new, clean document to build our article in
     const newDoc = document.implementation.createHTMLDocument(dom.title);
 
-    // Find all conversation turn elements
-    const turnElements = dom.querySelectorAll('[data-testid^="conversation-turn-"]');
+    // 2. Find ALL message elements (both user and assistant)
+    const allMessageElements = dom.querySelectorAll('[data-message-author-role]');
 
-    if (turnElements.length === 0) {
-      console.warn("No conversation turns found. Readability will not find any content.");
-      return dom;
+    if (allMessageElements.length === 0) {
+      console.warn("No conversation messages found. Readability will not find any content.");
+      return dom; // Return original dom if no messages are found
     }
 
-    // Create main container for Readability
+    // 3. Create a main container for the article content in the new document
     const articleContainer = newDoc.createElement('div');
-    articleContainer.id = 'readability-content';
+    articleContainer.id = 'readability-content'; // A strong hint for Readability
 
-    // Clone and append all turn elements directly
-    turnElements.forEach(turnElement => {
-      const clonedTurn = turnElement.cloneNode(true);
-      articleContainer.appendChild(clonedTurn);
+    // 4. Loop through all messages and add them to our container
+    allMessageElements.forEach(msgElement => {
+      const role = msgElement.getAttribute('data-message-author-role');
+
+      // Create a wrapper for this entire conversational turn
+      const turnWrapper = newDoc.createElement('div');
+      turnWrapper.style.marginBottom = '24px'; // Add visual separation
+
+      // Create and append the speaker label (e.g., "You:" or "ChatGPT:")
+      const speakerLabel = newDoc.createElement('h5');
+      speakerLabel.textContent = role === 'user' ? 'You:' : 'ChatGPT:';
+      speakerLabel.style.fontWeight = 'bold';
+      speakerLabel.style.marginTop = '0';
+      speakerLabel.style.marginBottom = '8px';
+      turnWrapper.appendChild(speakerLabel);
+
+      // --- NEW: Find and append all images in the message ---
+      const imageElements = msgElement.querySelectorAll('img');
+      if (imageElements.length > 0) {
+        imageElements.forEach(img => {
+          const clonedImg = img.cloneNode(true);
+          // Optional: Add some styling to make images display nicely
+          clonedImg.style.maxWidth = '100%';
+          clonedImg.style.height = 'auto';
+          clonedImg.style.display = 'block';
+          clonedImg.style.marginBottom = '10px';
+          turnWrapper.appendChild(clonedImg);
+        });
+      }
+
+      // Find and append the text content of the message
+      const textContentContainer = msgElement.querySelector('.whitespace-pre-wrap, .markdown.prose');
+      if (textContentContainer) {
+        turnWrapper.appendChild(textContentContainer.cloneNode(true));
+      }
+
+      // Add the fully constructed "turn" to our main article container
+      articleContainer.appendChild(turnWrapper);
     });
 
-    // Replace body with curated content
-    newDoc.body.innerHTML = '';
+    // 5. Replace the body of our new document with the curated article container
+    newDoc.body.innerHTML = ''; // Clear any default body content
     newDoc.body.appendChild(articleContainer);
-    console.log("Created a simplified DOM with conversation turns for Readability.");
+
+    // 6. Return the new, simplified document for Readability to parse
+    console.log("Created a simplified DOM with the full conversation (including images) for Readability.");
     return newDoc;
   }
   
@@ -381,10 +417,10 @@ if (isChatGPTPage) {
 }
   
   // Pass the final, clean document to Readability
-  // console.log('Final HTML being passed to Readability:', docToParse.documentElement.outerHTML);
+  console.log('Final HTML being passed to Readability:', docToParse.documentElement.outerHTML);
   const article = new Readability(docToParse).parse();
   
-  // console.log('Parsed Article Content:', article ? article.content : 'null');
+  console.log('Parsed Article Content:', article ? article.content : 'null');
 
   // console.log('after Readability:', article);
 
