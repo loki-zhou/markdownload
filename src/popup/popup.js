@@ -155,11 +155,7 @@ cm.on("cursorActivity", (cm) => {
 document.getElementById("download").addEventListener("click", download);
 document.getElementById("downloadSelection").addEventListener("click", downloadSelection);
 
-const defaultOptions = {
-    includeTemplate: false,
-    clipSelection: true,
-    downloadImages: false
-}
+// defaultOptions现在从shared/default-options.js中获取
 
 const checkInitialSettings = options => {
     if (options.includeTemplate) {

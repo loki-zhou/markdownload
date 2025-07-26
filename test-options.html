@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Options</title>
+</head>
+<body>
+    <h1>测试默认选项</h1>
+    <div id="result"></div>
+    
+    <script src="src/shared/default-options.js"></script>
+    <script>
+        document.getElementById('result').innerHTML = `
+            <p>downloadImages 默认值: ${defaultOptions.downloadImages}</p>
+            <p>clipSelection 默认值: ${defaultOptions.clipSelection}</p>
+            <p>includeTemplate 默认值: ${defaultOptions.includeTemplate}</p>
+        `;
+    </script>
+</body>
+</html>

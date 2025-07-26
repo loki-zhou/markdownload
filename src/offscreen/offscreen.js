@@ -610,7 +610,11 @@ function turndown(content, options, article) {
           // pass the filter if we're making an obsidian link (or stripping links)
           return true;
         }
-        else return true
+        else {
+          // 如果不下载图片，保持原始URL不变
+          // validatedSrc已经在上面设置过了，这里不需要再修改
+          return true;
+        }
       }
       // don't pass the filter, just output a normal markdown link
       return false;

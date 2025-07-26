@@ -221,6 +221,31 @@ async function convertArticleToMarkdown(article, downloadImages = null) {
   return result;
 }
 
+// function to convert article to markdown for preview (respect user settings but don't pre-download)
+async function convertArticleToMarkdownForPreview(article) {
+  const options = await getOptions();
+
+  // substitute front and backmatter templates if necessary
+  if (options.includeTemplate) {
+    options.frontmatter = textReplace(options.frontmatter, article) + '\n';
+    options.backmatter = '\n' + textReplace(options.backmatter, article);
+  }
+  else {
+    options.frontmatter = options.backmatter = '';
+  }
+  
+  options.imagePrefix = textReplace(options.imagePrefix, article, options.disallowedChars)
+    .split('/').map(s => generateValidFileName(s, options.disallowedChars)).join('/');
+
+  // 使用用户的实际downloadImages设置来决定图片路径的处理方式
+  // 这样预览的内容与最终下载的内容保持一致
+  let result = await turndown(article.content, options, article);
+  
+  // 不进行预下载，即使用户勾选了下载图片选项
+  // 预下载只在实际下载时进行
+  return result;
+}
+
 // function to turn the title into a valid file name
 function generateValidFileName(title, disallowedChars = null) {
   if (!title) return title;
@@ -410,7 +435,8 @@ async function notify(message, sender) {
 
     // convert the article to markdown
     // 注意：turndown函数内部已经报告了markdown-conversion阶段的进度
-    const { markdown, imageList } = await convertArticleToMarkdown(article);
+    // 在预览时收集图片信息但不预下载图片
+    const { markdown, imageList } = await convertArticleToMarkdownForPreview(article);
 
     // 报告进度：处理图片和链接
     reportProgress("image-link-processing");
