@@ -304,13 +304,43 @@ async function downloadMarkdown(markdown, title, tabId, imageList = {}, mdClipsF
   // download via the downloads API
   if (options.downloadMode == 'downloadsApi' && chrome.downloads) {
 
-    // create a data URI with the markdown content
-    const url = "data:text/markdown;charset=utf-8," + encodeURIComponent(markdown);
-
     try {
-
       if (mdClipsFolder && !mdClipsFolder.endsWith('/')) mdClipsFolder += '/';
-      // start the download
+      
+      // download images first (if enabled) and wait for all to complete
+      if (options.downloadImages && Object.keys(imageList).length > 0) {
+        console.log('Starting image downloads before markdown...');
+        
+        // get the relative path of the markdown file (if any) for image path
+        let destPath = mdClipsFolder + title.substring(0, title.lastIndexOf('/'));
+        if (destPath && !destPath.endsWith('/')) destPath += '/';
+        
+        // Wait for all image downloads to start (not necessarily complete)
+        const imageDownloadPromises = Object.entries(imageList).map(async ([src, filename]) => {
+          try {
+            // start the download of the image
+            const imgId = await chrome.downloads.download({
+              url: src,
+              // set a destination path (relative to md file)
+              filename: destPath ? destPath + filename : filename,
+              saveAs: false
+            });
+            // add a listener (so we can release the blob url)
+            chrome.downloads.onChanged.addListener(downloadListener(imgId, src));
+            return imgId;
+          } catch (error) {
+            console.error(`Failed to start download for image ${src}:`, error);
+            return null;
+          }
+        });
+        
+        // Wait for all image downloads to be initiated
+        await Promise.all(imageDownloadPromises);
+        console.log('All image downloads initiated, now downloading markdown...');
+      }
+      
+      // Now download the markdown file
+      const url = "data:text/markdown;charset=utf-8," + encodeURIComponent(markdown);
       const id = await chrome.downloads.download({
         url: url,
         filename: mdClipsFolder + title + ".md",
@@ -319,24 +349,6 @@ async function downloadMarkdown(markdown, title, tabId, imageList = {}, mdClipsF
 
       // add a listener for the download completion
       chrome.downloads.onChanged.addListener(downloadListener(id, url));
-
-      // download images (if enabled)
-      if (options.downloadImages) {
-        // get the relative path of the markdown file (if any) for image path
-        let destPath = mdClipsFolder + title.substring(0, title.lastIndexOf('/'));
-        if (destPath && !destPath.endsWith('/')) destPath += '/';
-        Object.entries(imageList).forEach(async ([src, filename]) => {
-          // start the download of the image
-          const imgId = await chrome.downloads.download({
-            url: src,
-            // set a destination path (relative to md file)
-            filename: destPath ? destPath + filename : filename,
-            saveAs: false
-          })
-          // add a listener (so we can release the blob url)
-          chrome.downloads.onChanged.addListener(downloadListener(imgId, src));
-        });
-      }
     }
     catch (err) {
       console.error("Download failed", err);
@@ -455,7 +467,20 @@ async function notify(message, sender) {
   }
   // message for triggering download
   else if (message.type == "download") {
-    downloadMarkdown(message.markdown, message.title, message.tab.id, message.imageList, message.mdClipsFolder);
+    // Re-process images to ensure correct file extensions and updated markdown
+    const options = await getOptions();
+    if (options.downloadImages && options.downloadMode == 'downloadsApi' && Object.keys(message.imageList).length > 0) {
+      console.log('Re-processing images for download to ensure correct file extensions...');
+      
+      // Re-run preDownloadImages to get the correct file extensions and updated markdown
+      const result = await preDownloadImages(message.imageList, message.markdown);
+      
+      // Use the updated markdown and imageList
+      await downloadMarkdown(result.markdown, message.title, message.tab.id, result.imageList, message.mdClipsFolder);
+    } else {
+      // No image processing needed, download as-is
+      await downloadMarkdown(message.markdown, message.title, message.tab.id, message.imageList, message.mdClipsFolder);
+    }
   }
 }
 

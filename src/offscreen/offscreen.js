@@ -1027,9 +1027,24 @@ function getImageFilename(src, options, article, prependFilePath = true) {
   let extension = filename.substring(filename.lastIndexOf('.'));
   if (extension == filename) {
     // there is no extension, so we need to figure one out
-    // for now, give it an 'idunno' extension and we'll process it later
-    filename = filename + '.idunno';
-    extension = '.idunno';
+    // Try to guess from URL parameters first (like wx_fmt=gif)
+    let guessedExtension = '.idunno';
+    
+    // Check for format hints in URL parameters
+    const urlParams = new URLSearchParams(src.substring(src.indexOf('?') + 1));
+    const formatParam = urlParams.get('wx_fmt') || urlParams.get('format') || urlParams.get('fmt');
+    if (formatParam) {
+      // Validate the format parameter against known image formats
+      const validFormats = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+      if (validFormats.includes(formatParam.toLowerCase())) {
+        guessedExtension = '.' + formatParam.toLowerCase();
+        console.log(`Guessed image format from URL parameter: ${formatParam}`);
+      }
+    }
+    
+    // for now, give it the guessed extension and we'll verify it later during download
+    filename = filename + guessedExtension;
+    extension = guessedExtension;
   }
 
   // Check if filename is too long or contains problematic characters
@@ -1141,7 +1156,7 @@ async function preDownloadImages(imageList, markdown, options, article) { // Add
         let newFilename = filename;
 
         // Check if we need to update the file extension based on actual MIME type
-        if (newFilename.endsWith('.idunno') || blob.type && mimedb[blob.type]) {
+        if (blob.type && mimedb[blob.type]) {
           let correctExtension = mimedb[blob.type];
 
           // Handle special case for JPEG (mimedb uses "jpeg" but we prefer "jpg")
@@ -1153,20 +1168,49 @@ async function preDownloadImages(imageList, markdown, options, article) { // Add
             // Get the current extension
             const currentExtension = newFilename.substring(newFilename.lastIndexOf('.') + 1).toLowerCase();
 
-            // If extensions don't match, update the filename
-            if (currentExtension !== correctExtension && currentExtension !== 'idunno') {
-              console.log(`Image format mismatch: expected ${currentExtension}, got ${blob.type} (${correctExtension})`);
+            // Always update if current extension is 'idunno', or if there's a mismatch
+            if (currentExtension === 'idunno' || currentExtension !== correctExtension) {
+              const oldExtension = currentExtension;
               newFilename = newFilename.substring(0, newFilename.lastIndexOf('.')) + '.' + correctExtension;
-            } else if (currentExtension === 'idunno') {
-              newFilename = filename.replace('.idunno', '.' + correctExtension);
+              
+              if (oldExtension === 'idunno') {
+                console.log(`Determined image format from MIME type: ${blob.type} -> .${correctExtension}`);
+              } else if (oldExtension !== correctExtension) {
+                console.log(`Image format corrected: .${oldExtension} -> .${correctExtension} (MIME: ${blob.type})`);
+              }
             }
 
             // Update markdown references if filename changed
             if (newFilename !== filename) {
+              console.log(`Updating markdown references: ${filename} -> ${newFilename}`);
+              
               if (!options.imageStyle.startsWith("obsidian")) {
-                markdown = markdown.replaceAll(filename.split('/').map(s => encodeURI(s)).join('/'), newFilename.split('/').map(s => encodeURI(s)).join('/'))
+                // For standard markdown links, we need to handle URL encoding
+                const oldEncodedPath = filename.split('/').map(s => encodeURI(s)).join('/');
+                const newEncodedPath = newFilename.split('/').map(s => encodeURI(s)).join('/');
+                
+                // Try multiple replacement patterns to ensure we catch all references
+                markdown = markdown.replaceAll(oldEncodedPath, newEncodedPath);
+                markdown = markdown.replaceAll(filename, newFilename);
+                
+                // Also handle cases where the filename might appear without encoding
+                const oldFilenameOnly = filename.substring(filename.lastIndexOf('/') + 1);
+                const newFilenameOnly = newFilename.substring(newFilename.lastIndexOf('/') + 1);
+                if (oldFilenameOnly !== newFilenameOnly) {
+                  markdown = markdown.replaceAll(oldFilenameOnly, newFilenameOnly);
+                }
               } else {
-                markdown = markdown.replaceAll(filename, newFilename)
+                // For Obsidian links, replace both full path and filename only
+                markdown = markdown.replaceAll(filename, newFilename);
+                
+                // Handle obsidian-nofolder case where only filename is used
+                if (options.imageStyle === 'obsidian-nofolder') {
+                  const oldFilenameOnly = filename.substring(filename.lastIndexOf('/') + 1);
+                  const newFilenameOnly = newFilename.substring(newFilename.lastIndexOf('/') + 1);
+                  if (oldFilenameOnly !== newFilenameOnly) {
+                    markdown = markdown.replaceAll(`![[${oldFilenameOnly}]]`, `![[${newFilenameOnly}]]`);
+                  }
+                }
               }
             }
           }
