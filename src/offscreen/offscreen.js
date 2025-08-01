@@ -279,7 +279,7 @@ async function getArticleFromDom(domString, originalUrl = null) {
   dom.documentElement.removeAttribute('class')
 
   // simplify the dom into an article
-  
+
   // console.log('before Readability (dom.baseURI):', dom.baseURI);
   console.log('hello ');
   (function fixArxivBase(dom) {
@@ -365,14 +365,14 @@ async function getArticleFromDom(domString, originalUrl = null) {
     console.log("Created a simplified DOM with the full conversation (including images) for Readability.");
     return newDoc;
   }
-  
-  
-function preprocessGrokPage(dom) {
+
+
+  function preprocessGrokPage(dom) {
     // Create a new, clean document
     const newDoc = document.implementation.createHTMLDocument(dom.title);
 
     // Find all conversation turn elements
-    const turnElements = dom.querySelectorAll('.relative:nth-child(n)' );
+    const turnElements = dom.querySelectorAll('.relative:nth-child(n)');
 
     if (turnElements.length === 0) {
       console.warn("No conversation turns found. Readability will not find any content.");
@@ -395,32 +395,32 @@ function preprocessGrokPage(dom) {
     newDoc.body.appendChild(articleContainer);
     console.log("Created a simplified DOM with conversation turns for Readability.");
     return newDoc;
-}
+  }
 
 
-// --- MAIN LOGIC ---
+  // --- MAIN LOGIC ---
 
 
-// We'll work on a clone to avoid changing the live page
-let docToParse = dom.cloneNode(true);
+  // We'll work on a clone to avoid changing the live page
+  let docToParse = dom.cloneNode(true);
 
-// Check which site we are on
-const isChatGPTPage = docToParse.baseURI && docToParse.baseURI.includes("chatgpt.com");
-const isGrokPage = docToParse.baseURI && docToParse.baseURI.includes("grok.com");
+  // Check which site we are on
+  const isChatGPTPage = docToParse.baseURI && docToParse.baseURI.includes("chatgpt.com");
+  const isGrokPage = docToParse.baseURI && docToParse.baseURI.includes("grok.com");
 
-if (isChatGPTPage) {
-  console.log("ChatGPT page detected. Preprocessing...");
-  docToParse = preprocessChatGPTPage(docToParse);
-} else if (isGrokPage) {
-  console.log("Grok page detected. Preprocessing...");
-  docToParse = preprocessGrokPage(docToParse);
-}
-  
+  if (isChatGPTPage) {
+    console.log("ChatGPT page detected. Preprocessing...");
+    docToParse = preprocessChatGPTPage(docToParse);
+  } else if (isGrokPage) {
+    console.log("Grok page detected. Preprocessing...");
+    docToParse = preprocessGrokPage(docToParse);
+  }
+
   // Pass the final, clean document to Readability
-  console.log('Final HTML being passed to Readability:', docToParse.documentElement.outerHTML);
+  // console.log('Final HTML being passed to Readability:', docToParse.documentElement.outerHTML);
   const article = new Readability(docToParse).parse();
-  
-  console.log('Parsed Article Content:', article ? article.content : 'null');
+
+  // console.log('Parsed Article Content:', article ? article.content : 'null');
 
   // console.log('after Readability:', article);
 
@@ -1009,15 +1009,23 @@ function validateUri(href, baseURI, article = null) { // Add article as a parame
 }
 
 function getImageFilename(src, options, article, prependFilePath = true) {
+  console.log(`getImageFilename called with src: ${src}`);
   const slashPos = src.lastIndexOf('/');
   const queryPos = src.indexOf('?');
   let filename = src.substring(slashPos + 1, queryPos > 0 ? queryPos : src.length);
+  console.log(`Initial filename extracted: ${filename}`);
 
-  let imagePrefix = (options.imagePrefix || '');
-
-  // 完全禁用使用页面标题作为图片文件名前缀
-  // 这可以避免长标题导致的文件名问题
-  // 用户可以通过设置 options.imagePrefix 来自定义前缀
+  // 确保 imagePrefix 是安全的，避免使用过长的标题
+  let imagePrefix = '';
+  if (options.imagePrefix && typeof options.imagePrefix === 'string') {
+    console.log(`Original imagePrefix: ${options.imagePrefix}`);
+    // 限制前缀长度并清理不安全字符
+    imagePrefix = generateValidFileName(options.imagePrefix.substring(0, 20), options.disallowedChars);
+    if (imagePrefix && !imagePrefix.endsWith('/')) {
+      imagePrefix += '/';
+    }
+    console.log(`Processed imagePrefix: ${imagePrefix}`);
+  }
 
   if (filename.includes(';base64,')) {
     // this is a base64 encoded image, so what are we going to do for a filename here?
@@ -1029,7 +1037,7 @@ function getImageFilename(src, options, article, prependFilePath = true) {
     // there is no extension, so we need to figure one out
     // Try to guess from URL parameters first (like wx_fmt=gif)
     let guessedExtension = '.idunno';
-    
+
     // Check for format hints in URL parameters
     const urlParams = new URLSearchParams(src.substring(src.indexOf('?') + 1));
     const formatParam = urlParams.get('wx_fmt') || urlParams.get('format') || urlParams.get('fmt');
@@ -1041,7 +1049,7 @@ function getImageFilename(src, options, article, prependFilePath = true) {
         console.log(`Guessed image format from URL parameter: ${formatParam}`);
       }
     }
-    
+
     // for now, give it the guessed extension and we'll verify it later during download
     filename = filename + guessedExtension;
     extension = guessedExtension;
@@ -1060,7 +1068,17 @@ function getImageFilename(src, options, article, prependFilePath = true) {
     filename = generateValidFileName(filename, options.disallowedChars);
   }
 
-  return imagePrefix + filename;
+  const finalFilename = imagePrefix + filename;
+
+  // 确保最终文件名不为空
+  if (!finalFilename || finalFilename.trim() === '' || finalFilename === '/') {
+    const uuid = generateUUID();
+    const fallbackFilename = `image-${uuid}.png`;
+    console.log(`Empty filename detected, using fallback: ${fallbackFilename}`);
+    return fallbackFilename;
+  }
+
+  return finalFilename;
 }
 
 // Generate a simple UUID v4
@@ -1110,13 +1128,21 @@ function generateValidFileName(title, disallowedChars = null) {
     console.log(`Filename truncated to ${name.length} characters: ${name}`);
   }
 
+  // 确保不返回空字符串
+  if (!name || name.trim() === '') {
+    console.log('generateValidFileName: Empty name detected, using fallback');
+    return 'unnamed-file';
+  }
+
   return name;
 }
 
 async function preDownloadImages(imageList, markdown, options, article) { // Add article as a parameter
   let newImageList = {};
+  console.log('preDownloadImages input imageList:', imageList);
   await Promise.all(Object.entries(imageList).map(async ([src, filename]) => {
     try {
+      console.log(`Processing image: src=${src}, filename=${filename}`);
       // Convert chrome-extension URLs to proper URLs before fetching
       let fetchUrl = src;
       console.log(`fetchUrl =  ${fetchUrl}`);
@@ -1172,7 +1198,7 @@ async function preDownloadImages(imageList, markdown, options, article) { // Add
             if (currentExtension === 'idunno' || currentExtension !== correctExtension) {
               const oldExtension = currentExtension;
               newFilename = newFilename.substring(0, newFilename.lastIndexOf('.')) + '.' + correctExtension;
-              
+
               if (oldExtension === 'idunno') {
                 console.log(`Determined image format from MIME type: ${blob.type} -> .${correctExtension}`);
               } else if (oldExtension !== correctExtension) {
@@ -1183,16 +1209,16 @@ async function preDownloadImages(imageList, markdown, options, article) { // Add
             // Update markdown references if filename changed
             if (newFilename !== filename) {
               console.log(`Updating markdown references: ${filename} -> ${newFilename}`);
-              
+
               if (!options.imageStyle.startsWith("obsidian")) {
                 // For standard markdown links, we need to handle URL encoding
                 const oldEncodedPath = filename.split('/').map(s => encodeURI(s)).join('/');
                 const newEncodedPath = newFilename.split('/').map(s => encodeURI(s)).join('/');
-                
+
                 // Try multiple replacement patterns to ensure we catch all references
                 markdown = markdown.replaceAll(oldEncodedPath, newEncodedPath);
                 markdown = markdown.replaceAll(filename, newFilename);
-                
+
                 // Also handle cases where the filename might appear without encoding
                 const oldFilenameOnly = filename.substring(filename.lastIndexOf('/') + 1);
                 const newFilenameOnly = newFilename.substring(newFilename.lastIndexOf('/') + 1);
@@ -1202,7 +1228,7 @@ async function preDownloadImages(imageList, markdown, options, article) { // Add
               } else {
                 // For Obsidian links, replace both full path and filename only
                 markdown = markdown.replaceAll(filename, newFilename);
-                
+
                 // Handle obsidian-nofolder case where only filename is used
                 if (options.imageStyle === 'obsidian-nofolder') {
                   const oldFilenameOnly = filename.substring(filename.lastIndexOf('/') + 1);
@@ -1217,12 +1243,16 @@ async function preDownloadImages(imageList, markdown, options, article) { // Add
         }
 
         const blobUrl = URL.createObjectURL(blob);
+        console.log(`Created blob URL: ${blobUrl} -> filename: ${newFilename}`);
         newImageList[blobUrl] = newFilename;
       }
     } catch (error) {
       console.error('A network error occurred attempting to download ' + src, error);
+      // 即使下载失败，也要确保有一个有效的文件名
+      console.log(`Download failed for ${src}, using original filename: ${filename}`);
     }
   }));
 
+  console.log("newImageList = ", newImageList)
   return { imageList: newImageList, markdown: markdown };
 }

@@ -144,6 +144,12 @@ function textReplace(string, article, disallowedChars = null) {
   for (const key in article) {
     if (article.hasOwnProperty(key) && key != "content") {
       let s = (article[key] || '') + '';
+      
+      // 限制页面标题等字段的长度，避免文件名过长
+      if (key === 'pageTitle' || key === 'title') {
+        s = s.substring(0, 50); // 限制为50个字符
+      }
+      
       if (s && disallowedChars) s = this.generateValidFileName(s, disallowedChars);
 
       string = string.replace(new RegExp('{' + key + '}', 'g'), s)
@@ -318,11 +324,22 @@ async function downloadMarkdown(markdown, title, tabId, imageList = {}, mdClipsF
         // Wait for all image downloads to start (not necessarily complete)
         const imageDownloadPromises = Object.entries(imageList).map(async ([src, filename]) => {
           try {
+            console.log(`Attempting to download: src=${src}, filename=${filename}`);
+            
+            // 确保文件名不为空
+            if (!filename || filename.trim() === '') {
+              console.error(`Invalid filename for image ${src}: "${filename}"`);
+              return null;
+            }
+            
+            const finalFilename = destPath ? destPath + filename : filename;
+            console.log(`Final download filename: ${finalFilename}`);
+            
             // start the download of the image
             const imgId = await chrome.downloads.download({
               url: src,
               // set a destination path (relative to md file)
-              filename: destPath ? destPath + filename : filename,
+              filename: finalFilename,
               saveAs: false
             });
             // add a listener (so we can release the blob url)
