@@ -139,18 +139,86 @@ async function turndown(content, options, article) {
 
 
 
+// 创建简短标题，用于文件夹命名
+function createShortTitle(title) {
+  if (!title) return 'article';
+  
+  let shortTitle = title
+    // 移除网站名称后缀（如 " - GitHub", " | Medium" 等）
+    .replace(/\s*[-|]\s*[^-|]*$/, '')
+    // 移除括号内容
+    .replace(/\s*\([^)]*\)/g, '')
+    .replace(/\s*\[[^\]]*\]/g, '')
+    // 移除常见的标点符号
+    .replace(/['""`''""]/g, '')
+    .trim();
+  
+  // 只保留前几个重要单词
+  const words = shortTitle.split(/\s+/).filter(word => word.length > 0);
+  shortTitle = words.slice(0, 3).join('-');
+  
+  // 移除所有特殊字符，只保留字母数字和连字符
+  shortTitle = shortTitle
+    .replace(/[^a-zA-Z0-9\u4e00-\u9fff-]/g, '') // 保留中文字符
+    .replace(/-+/g, '-') // 多个连字符合并为一个
+    .replace(/^-+|-+$/g, '') // 移除开头和结尾的连字符
+    .toLowerCase()
+    .substring(0, 20); // 最多20个字符
+  
+  return shortTitle || 'article';
+}
+
+// 智能截取标题，使其更适合作为文件名
+function smartTitleTruncate(title) {
+  if (!title) return title;
+  
+  // 移除常见的问题字符和模式
+  let cleanTitle = title
+    // 移除网站名称后缀（如 " - GitHub", " | Medium" 等）
+    .replace(/\s*[-|]\s*[^-|]*$/, '')
+    // 移除括号内容（通常是补充信息）
+    .replace(/\s*\([^)]*\)/g, '')
+    .replace(/\s*\[[^\]]*\]/g, '')
+    // 移除多余的标点符号
+    .replace(/['""`''""]/g, '')
+    // 将多个空格合并为一个
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  // 如果清理后的标题太短，使用原标题的前部分
+  if (cleanTitle.length < 10 && title.length > 10) {
+    cleanTitle = title.substring(0, 40).trim();
+  }
+  
+  // 按词截取，避免在单词中间截断
+  const maxLength = 35;
+  if (cleanTitle.length > maxLength) {
+    const words = cleanTitle.split(' ');
+    let result = '';
+    for (const word of words) {
+      if ((result + ' ' + word).length > maxLength) {
+        break;
+      }
+      result += (result ? ' ' : '') + word;
+    }
+    cleanTitle = result || cleanTitle.substring(0, maxLength);
+  }
+  
+  return cleanTitle;
+}
+
 // function to replace placeholder strings with article info
 function textReplace(string, article, disallowedChars = null) {
   for (const key in article) {
     if (article.hasOwnProperty(key) && key != "content") {
       let s = (article[key] || '') + '';
       
-      // 限制页面标题等字段的长度，避免文件名过长
+      // 智能处理页面标题，使其更适合作为文件名
       if (key === 'pageTitle' || key === 'title') {
-        s = s.substring(0, 50); // 限制为50个字符
+        s = smartTitleTruncate(s);
       }
       
-      if (s && disallowedChars) s = this.generateValidFileName(s, disallowedChars);
+      if (s && disallowedChars) s = generateValidFileName(s, disallowedChars);
 
       string = string.replace(new RegExp('{' + key + '}', 'g'), s)
         .replace(new RegExp('{' + key + ':lower}', 'g'), s.toLowerCase())
@@ -216,7 +284,16 @@ async function convertArticleToMarkdown(article, downloadImages = null) {
     options.frontmatter = options.backmatter = '';
   }
   
-  options.imagePrefix = textReplace(options.imagePrefix, article, options.disallowedChars)
+  // 为 imagePrefix 使用简短标题，避免文件夹名过长
+  let imagePrefixForProcessing = options.imagePrefix.replace(/{pageTitle}/g, '{shortTitle}');
+  
+  // 创建一个包含 shortTitle 的临时 article 对象
+  const articleWithShortTitle = {
+    ...article,
+    shortTitle: createShortTitle(article.pageTitle)
+  };
+  
+  options.imagePrefix = textReplace(imagePrefixForProcessing, articleWithShortTitle, options.disallowedChars)
     .split('/').map(s => generateValidFileName(s, options.disallowedChars)).join('/');
 
   let result = await turndown(article.content, options, article);
@@ -240,7 +317,16 @@ async function convertArticleToMarkdownForPreview(article) {
     options.frontmatter = options.backmatter = '';
   }
   
-  options.imagePrefix = textReplace(options.imagePrefix, article, options.disallowedChars)
+  // 为 imagePrefix 使用简短标题，避免文件夹名过长
+  let imagePrefixForProcessing = options.imagePrefix.replace(/{pageTitle}/g, '{shortTitle}');
+  
+  // 创建一个包含 shortTitle 的临时 article 对象
+  const articleWithShortTitle = {
+    ...article,
+    shortTitle: createShortTitle(article.pageTitle)
+  };
+  
+  options.imagePrefix = textReplace(imagePrefixForProcessing, articleWithShortTitle, options.disallowedChars)
     .split('/').map(s => generateValidFileName(s, options.disallowedChars)).join('/');
 
   // 使用用户的实际downloadImages设置来决定图片路径的处理方式
@@ -256,20 +342,41 @@ async function convertArticleToMarkdownForPreview(article) {
 function generateValidFileName(title, disallowedChars = null) {
   if (!title) return title;
   else title = title + '';
-  // remove < > : " / \ | ? * 
-  var illegalRe = /[\/\?<>\\:\*\|":]/g;
-  // and non-breaking spaces (thanks @Licat)
-  var name = title.replace(illegalRe, "").replace(new RegExp('\u00A0', 'g'), ' ')
-    // collapse extra whitespace
-    .replace(new RegExp(/\s+/, 'g'), ' ')
-    // remove leading/trailing whitespace that can cause issues when using {pageTitle} in a download path
+  
+  // 更全面的文件名清理
+  var name = title
+    // 移除文件系统非法字符
+    .replace(/[\/\?<>\\:\*\|":]/g, '')
+    // 移除或替换 markdown 问题字符
+    .replace(/[\[\]]/g, '') // 移除方括号
+    .replace(/[()]/g, '') // 移除圆括号
+    .replace(/[{}]/g, '') // 移除花括号
+    .replace(/[#]/g, '') // 移除井号
+    .replace(/[`]/g, '') // 移除反引号
+    // 替换其他问题字符
+    .replace(/[&]/g, 'and') // & 替换为 and
+    .replace(/[%]/g, 'percent') // % 替换为 percent
+    .replace(/[@]/g, 'at') // @ 替换为 at
+    .replace(/[+]/g, 'plus') // + 替换为 plus
+    .replace(/[=]/g, 'eq') // = 替换为 eq
+    // 处理空格和特殊空格
+    .replace(/\u00A0/g, ' ') // 非断行空格
+    .replace(/\s+/g, ' ') // 多个空格合并为一个
+    .replace(/[-_\s]+/g, '-') // 连续的连字符、下划线、空格替换为单个连字符
+    .replace(/^[-_]+|[-_]+$/g, '') // 移除开头和结尾的连字符、下划线
     .trim();
 
+  // 处理用户自定义的禁用字符
   if (disallowedChars) {
     for (let c of disallowedChars) {
       if (`[\\^$.|?*+()`.includes(c)) c = `\\${c}`;
       name = name.replace(new RegExp(c, 'g'), '');
     }
+  }
+
+  // 确保文件名不为空
+  if (!name || name.length === 0) {
+    name = 'untitled';
   }
 
   return name;
