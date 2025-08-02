@@ -30,7 +30,7 @@ chrome.runtime.onMessage.addListener(async (message) => {
     case 'turndown-request': {
       const { content, options, article } = message.data;
       // 确保 options 中包含 article
-      const turndownOptions = { ...options, article };
+      const turndownOptions = { ...options, article, br: '\n' };
       const result = turndown(content, turndownOptions, article);
       chrome.runtime.sendMessage({ type: 'turndown-result', data: result });
       break;
@@ -698,11 +698,19 @@ function turndown(content, options, article) {
   }
 
   function convertToFencedCodeBlock(node, options) {
-    node.innerHTML = node.innerHTML.replaceAll('<br-keep></br-keep>', '<br>');
+    // Restore the <br> tags that were preserved through Readability
+    let html = node.innerHTML.replaceAll('<br-keep></br-keep>', '<br>');
+    // Replace <br> tags with actual newlines
+    html = html.replace(/<br\s*\/?>/gi, '\n');
+
+    // To safely get the text content while preserving newlines,
+    // we can create a temporary element.
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    const code = tempDiv.textContent || tempDiv.innerText || '';
+    
     const langMatch = node.id?.match(/code-lang-(.+)/);
     const language = langMatch?.length > 0 ? langMatch[1] : '';
-
-    const code = node.innerText;
 
     const fenceChar = options.fence.charAt(0);
     let fenceSize = 3;
